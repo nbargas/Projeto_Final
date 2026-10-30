@@ -1,1 +1,1 @@
-# Projeto Final Integrador - Gerenciador de Estoque
+# Projeto Final Integrador - Gerenciador de Estoque.
