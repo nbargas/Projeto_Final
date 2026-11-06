@@ -1,189 +1,109 @@
 # Sistema de Gestao de Estoque - API RESTful
 
----
-
-## Apresentacao do Projeto
-
-A presente API RESTful foi desenvolvida como Projeto Final Integrador da disciplina de Desenvolvimento / Programacao Web (PBE1) do **SENAI "Jairo Candido"**, localizado no municipio de Maua - SP.
-
-O objetivo principal da aplicacao e fornecer uma solucao robusta, modular e escalavel para o gerenciamento de estoque de mercadorias, contemplando o cadastro, atualizacao, consulta e remocao de **Produtos** e **Categorias**. A arquitetura segue rigorosamente o padrao **MVC (Model-View-Controller)**, assegurando a separacao clara de responsabilidades, integridade referencial dos dados, tratamento centralizado de excecoes e middlewares de auditoria.
+API RESTful desenvolvida como Projeto Final Integrador (PBE1) no SENAI "Jairo Candido" (Maua). A aplicacao realiza o gerenciamento completo de estoque (Produtos e Categorias), aplicando o padrao arquitetural MVC (Model-View-Controller), validacoes de entrada, integridade referencial de dados e middlewares globais de auditoria e tratamento de excecoes.
 
 ---
 
 ## Autores do Projeto
 
-- **Arthur Nunes** | GitHub: [github.com/nbargas](https://github.com/nbargas)
-- **Livia V. Santos** | GitHub: [github.com/liviavalentimS](https://github.com/liviavalentimS)
+- **Arthur Nunes** (https://github.com/nbargas)
+- **Livia V. Santos** (https://github.com/liviavalentimS)
 
-**Instituicao:** SENAI "Jairo Candido" — Maua / SP  
+**Instituicao:** SENAI "Jairo Candido" - Maua / SP  
 **Disciplina:** Projeto Bloco de Engenharia 1 (PBE1)  
 
 ---
 
-## Tecnologias e Especificacoes Tecnicas
+## Tecnologias e Ferramentas
 
-- **Ambiente de Execucao:** Node.js (Versao 18.x ou superior)
+- **Runtime:** Node.js (v18.x ou superior)
 - **Framework Web:** Express.js (v4.x)
 - **Padrao Arquitetural:** MVC (Model-View-Controller)
-- **Controle de Versionamento:** Git e GitHub
+- **Versionamento:** Git e GitHub
 - **Ambiente de Hospedagem / Testes:** Google Cloud Shell (Debian Linux)
-- **Ferramentas de Teste HTTP:** Bash, `curl` e `jq`
+- **Ferramentas de Teste HTTP:** Bash, curl e jq
 
 ---
 
-## Arquitetura e Estrutura de Diretoriis
-
-A estrutura de arquivos do projeto foi organizada para garantir alta coesao e baixo acoplamento entre os componentes da aplicacao:
+## Estrutura do Projeto (MVC)
 
 Projeto_Final/
-├── index.js                  # Arquivo principal da aplicacao e inicializacao do servidor Express
-├── package.json              # Mapeamento de dependencias e scripts de execucao
-├── README.md                 # Documentacao oficial do repositorio
+├── .env.example              # Exemplo de variaveis de ambiente
+├── .gitignore                # Regras de ignoranciamento do Git
+├── LICENSE                   # Licenca MIT
+├── index.js                  # Ponto de entrada da aplicacao
+├── package.json              # Dependencias e scripts de execucao (npm start)
+├── README.md                 # Documentacao oficial
 └── src/
-    ├── controllers/          # Camada de regras de negocio e controle de requisicoes
+    ├── controllers/          # Logica de negocio e tratamento das requisicoes
     │   ├── categoriaController.js
     │   └── produtoController.js
-    ├── data/                 # Camada de persistencia (Banco de dados em memoria)
+    ├── data/                 # Camada de persistencia (Banco em memoria)
     │   └── db.js
-    └── routes/               # Mapeamento dos endpoints e roteamento HTTP
+    └── routes/               # Mapeamento dos endpoints HTTP
         ├── categoriaRoutes.js
         └── produtoRoutes.js
 Regras de Negocio e Integridade de Dados
-Integridade Referencial de Categorias:
+Integridade Referencial de Categorias: Nao e possivel excluir uma categoria que possua produtos ativos associados a ela. A tentativa de remocao retorna um status HTTP 400 Bad Request.
 
-Nao e possivel excluir uma categoria que possua produtos ativos associados a ela. A tentativa de remocao retorna um status HTTP 400 Bad Request informando o impedimento.
+Validacao de Payload de Entrada: O cadastro de Categorias exige o envio obrigatorio do atributo nome. O cadastro de Produtos exige nome, preco e categoriaId.
 
-Validacao de Payload de Entrada:
+Tratamento Global de Erros: Middlewares dedicados para logging de requisicoes, captura de rotas inexistentes (404) e tratamento de falhas internas do servidor (500).
 
-O cadastro de Categorias exige o envio obrigatorio do atributo nome.
-
-O cadastro de Produtos exige obrigatoriamente os atributos nome, preco e categoriaId.
-
-Requisicoes com campos ausentes ou tipos invalidos sao rejeitadas com erro HTTP 400 Bad Request.
-
-Tratamento Global de Excecoes e Erros:
-
-Middleware Log: Registra o timestamp, metodo HTTP e rota de cada requisicao no console.
-
-Middleware 404: Captura tentativas de acesso a rotas nao mapeadas e retorna resposta padronizada em JSON.
-
-Middleware 500: Captura falhas internas no servidor sem expor detalhes sensiveis da aplicacao ao cliente.
-
-Mapeamento Completo de Endpoints
+Endpoints da API
 Gestao de Categorias (/categorias)
-GET /categorias
+GET /categorias - Lista todas as categorias cadastradas.
 
-Retorna a lista completa com todas as categorias registradas no sistema.
+GET /categorias/:id - Busca uma categoria especificamente pelo ID.
 
-Resposta de Sucesso: 200 OK
+POST /categorias - Cadastra uma nova categoria no sistema.
 
-GET /categorias/:id
+PUT /categorias/:id - Atualiza os dados de uma categoria existente.
 
-Retorna os detalhes de uma categoria especifica com base no ID informado na URL.
-
-Resposta de Sucesso: 200 OK | Erro: 404 Not Found
-
-POST /categorias
-
-Registra uma nova categoria no sistema.
-
-Corpo da Requisicao (JSON): {"nome": "Eletronicos"}
-
-Resposta de Sucesso: 201 Created | Erro: 400 Bad Request
-
-PUT /categorias/:id
-
-Atualiza o nome de uma categoria existente identificada pelo ID.
-
-Corpo da Requisicao (JSON): {"nome": "Informatica"}
-
-Resposta de Sucesso: 200 OK | Erro: 400 Bad Request / 404 Not Found
-
-DELETE /categorias/:id
-
-Remove uma categoria caso nao haja nenhum produto vinculado.
-
-Resposta de Sucesso: 200 OK | Erro: 400 Bad Request / 404 Not Found
+DELETE /categorias/:id - Remove uma categoria (bloqueado se houver produtos vinculados).
 
 Gestao de Produtos (/produtos)
-GET /produtos
+GET /produtos - Lista produtos com suporte a query params (busca, minPreco, maxPreco, categoriaId).
 
-Retorna a lista de produtos. Suporta filtros combinados via Query Parameters:
+GET /produtos/:id - Busca um produto especificamente pelo ID.
 
-busca: Filtra por nome do produto (busca parcial insensivel a maiusculas/minusculas). Exemplo: /produtos?busca=teclado
+POST /produtos - Cadastra um novo produto associado a uma categoria valida.
 
-minPreco / maxPreco: Filtra por faixa de preco. Exemplo: /produtos?minPreco=50&maxPreco=200
+PUT /produtos/:id - Atualiza as informacoes de um produto existente.
 
-categoriaId: Filtra por id especifico de categoria. Exemplo: /produtos?categoriaId=1
-
-Resposta de Sucesso: 200 OK
-
-GET /produtos/:id
-
-Retorna os detalhes de um produto especifico.
-
-Resposta de Sucesso: 200 OK | Erro: 404 Not Found
-
-POST /produtos
-
-Cadastra um novo produto associado a uma categoria valida.
-
-Corpo da Requisicao (JSON): {"nome": "Teclado Mecanico", "preco": 250.00, "categoriaId": 1}
-
-Resposta de Sucesso: 201 Created | Erro: 400 Bad Request
-
-PUT /produtos/:id
-
-Atualiza as informacoes de um produto existente.
-
-Corpo da Requisicao (JSON): {"nome": "Teclado RGB", "preco": 280.00, "categoriaId": 1}
-
-Resposta de Sucesso: 200 OK | Erro: 400 Bad Request / 404 Not Found
-
-DELETE /produtos/:id
-
-Exclui um produto do sistema.
-
-Resposta de Sucesso: 200 OK | Erro: 404 Not Found
+DELETE /produtos/:id - Exclui um produto do sistema.
 
 Guia de Instalacao e Execucao
-Pre-requisitos Necessarios
-Node.js instalado na versao 18.0.0 ou superior.
+Pre-requisitos
+Node.js (v18.x ou superior)
 
-Git instalado e configurado no ambiente.
+Git
 
-Procedimento no Terminal
-Clonar o Repositorio:
+Passo a Passo
+Clonar o repositorio:
 
 Bash
 git clone [https://github.com/nbargas/Projeto_Final.git](https://github.com/nbargas/Projeto_Final.git)
 cd Projeto_Final
-Instalar as Dependencias do Projeto:
+Instalar as dependencias:
 
 Bash
 npm install
-Iniciar a Aplicacao:
+Iniciar o servidor:
 
 Bash
-node index.js
-O servidor passara a escutar na porta 1414 (URL: http://localhost:1414).
+npm start
+O servidor sera executado na porta 1414 (http://localhost:1414).
 
-Validacao e Testes de Endpoints (Via Terminal Bash)
-Para homologar a API diretamente pelo terminal utilizando curl e jq, utilize os comandos abaixo:
-
+Validacao via Terminal (Bash / curl / jq)
 Bash
-# 1. Listar todas as categorias cadastradas
+# 1. Listar todas as categorias
 curl -s http://localhost:1414/categorias | jq .
 
-# 2. Cadastrar uma nova categoria
-curl -s -X POST http://localhost:1414/categorias \
-  -H "Content-Type: application/json" \
-  -d '{"nome": "Perifericos"}' | jq .
-
-# 3. Filtrar produtos por termo de busca
+# 2. Filtrar produtos por termo de busca
 curl -s "http://localhost:1414/produtos?busca=teclado" | jq .
 
-# 4. Validar o tratamento de rota inexistente (Middleware 404)
+# 3. Teste de rota inexistente (Middleware 404)
 curl -s http://localhost:1414/rota-inexistente | jq .
 Licenca e Consideracoes Academicas
-Este projeto foi elaborado de forma exclusiva para fins didaticos e de avaliacao no curso de Desenvolvimento do SENAI "Jairo Candido" (Maua / SP).
+Este projeto foi elaborado de forma exclusiva para fins didaticos e de avaliacao no curso do SENAI "Jairo Candido" (Maua / SP) sob Licenca MIT.
