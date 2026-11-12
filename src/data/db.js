@@ -29,4 +29,9 @@ let produtos = [
   { id: 20, nome: "Luminaria de Mesa LED Articulada", preco: 115.00, quantidade: 19, categoriaId: 2 }
 ];
 
-module.exports = { categorias, produtos };
+module.exports = {
+  categorias,
+  produtos,
+  proximoIdCategoria: 6,
+  proximoIdProduto: 21
+};
