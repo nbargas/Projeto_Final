@@ -1,11 +1,34 @@
 const express = require('express');
 const categoriaRoutes = require('./src/routes/categoriaRoutes');
 const produtoRoutes = require('./src/routes/produtoRoutes');
+const { globalErrorHandler } = require('./src/middlewares/errorHandler');
 
 const app = express();
 const PORT = 1414;
 
-app.use(express.json());
+// Protecao contra encerramento abrupto do processo Node.js
+process.on('uncaughtException', (err) => {
+  console.error(`[PROTECAO UNCAUGHT ${new Date().toISOString()}]:`, err.message);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error(`[PROTECAO REJECTION ${new Date().toISOString()}]:`, reason);
+});
+
+// Limite de payload para evitar travamento por excesso de dados
+app.use(express.json({ limit: '100kb' }));
+
+// Valida Content-Type em requisicoes POST e PUT
+app.use((req, res, next) => {
+  if ((req.method === 'POST' || req.method === 'PUT') && !req.is('application/json')) {
+    return res.status(415).json({
+      status: 'erro',
+      codigo: 415,
+      mensagem: 'Cabecalho Content-Type invalido. Envie os dados no formato application/json.'
+    });
+  }
+  next();
+});
 
 // Middleware de Logs de requisicao
 app.use((req, res, next) => {
@@ -20,15 +43,19 @@ app.use('/produtos', produtoRoutes);
 
 // Tratamento de Rota Inexistente (404)
 app.use((req, res) => {
-  res.status(404).json({ status: 'erro', mensagem: 'Rota nao encontrada na API.' });
+  res.status(404).json({
+    status: 'erro',
+    codigo: 404,
+    mensagem: `A rota '${req.method} ${req.originalUrl}' nao existe na API.`
+  });
 });
 
-// Tratamento de Erro de Servidor (500)
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ status: 'erro', mensagem: 'Ocorreu um erro interno no servidor.' });
+// Tratamento Centralizado de Erros (400 / 413 / 500)
+app.use(globalErrorHandler);
+
+const server = app.listen(PORT, () => {
+  console.log(`Servidor blindado rodando na porta ${PORT}`);
 });
 
-app.listen(PORT, () => {
-  console.log(`Servidor a rodar na porta ${PORT}`);
-});
+// Timeout de seguranca para evitar conexoes travadas
+server.setTimeout(10000);
