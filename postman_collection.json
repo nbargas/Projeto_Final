@@ -1,0 +1,39 @@
+{
+  "info": {
+    "name": "API Gestao de Estoque - SENAI PBE1",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Categorias",
+      "item": [
+        {
+          "name": "Listar Categorias",
+          "request": { "method": "GET", "url": "http://localhost:1414/categorias" }
+        },
+        {
+          "name": "Criar Categoria",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"nome\": \"Informatica\"\n}" },
+            "url": "http://localhost:1414/categorias"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Produtos",
+      "item": [
+        {
+          "name": "Listar Produtos",
+          "request": { "method": "GET", "url": "http://localhost:1414/produtos" }
+        },
+        {
+          "name": "Filtrar Produtos",
+          "request": { "method": "GET", "url": "http://localhost:1414/produtos?busca=teclado&minPreco=50&maxPreco=300" }
+        }
+      ]
+    }
+  ]
+}
