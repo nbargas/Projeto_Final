@@ -1,0 +1,16 @@
+### Listar todas as categorias
+GET http://localhost:1414/categorias
+
+### Criar uma nova categoria
+POST http://localhost:1414/categorias
+Content-Type: application/json
+
+{
+  "nome": "Perifericos"
+}
+
+### Listar todos os produtos
+GET http://localhost:1414/produtos
+
+### Filtrar produtos por nome e faixa de preco
+GET http://localhost:1414/produtos?busca=teclado&minPreco=50&maxPreco=300
