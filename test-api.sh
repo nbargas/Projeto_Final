@@ -11,10 +11,11 @@ while true; do
   echo "  [3] Filtrar Produtos por faixa de preco (GET)"
   echo "  [4] Cadastrar nova Categoria (POST)"
   echo "  [5] Cadastrar novo Produto (POST)"
-  echo "  [6] Atualizar Produto existente (PUT)"
-  echo "  [7] Deletar Produto (DELETE)"
-  echo "  [8] Testar Erro 400 (Bloquear exclusao de categoria em uso)"
-  echo "  [9] Testar Erro 404 (Rota inexistente)"
+  echo "  [6] Atualizar Produto completo (PUT)"
+  echo "  [7] Atualizar apenas preco do Produto (PATCH)"
+  echo "  [8] Deletar Produto (DELETE)"
+  echo "  [9] Testar Erro 400 (Bloquear exclusao de categoria em uso)"
+  echo " [10] Testar Erro 404 (Rota inexistente)"
   echo "  [0] Sair"
   echo "=========================================="
   read -p "Digite o numero da opcao desejada: " opcao
@@ -60,21 +61,29 @@ while true; do
       read -p "Novo Preco (ex: 199.90): " upd_preco
       read -p "Nova Quantidade: " upd_qtd
       read -p "ID da Categoria: " upd_cat
-      echo ">>> Atualizando Produto ID $upd_id:"
+      echo ">>> Atualizando Produto ID $upd_id (PUT):"
       curl -s -X PUT "$URL/produtos/$upd_id" \
         -H "Content-Type: application/json" \
         -d "{\"nome\": \"$upd_nome\", \"preco\": ${upd_preco//,/.}, \"quantidade\": $upd_qtd, \"categoriaId\": $upd_cat}" | jq .
       ;;
     7)
+      read -p "ID do Produto para atualizar o preco: " patch_id
+      read -p "Novo Preco (ex: 99.90): " patch_preco
+      echo ">>> Atualizando parcialmente Produto ID $patch_id (PATCH):"
+      curl -s -X PATCH "$URL/produtos/$patch_id" \
+        -H "Content-Type: application/json" \
+        -d "{\"preco\": ${patch_preco//,/.}}" | jq .
+      ;;
+    8)
       read -p "ID do Produto que deseja deletar: " del_id
       echo ">>> Deletando Produto ID $del_id:"
       curl -s -X DELETE "$URL/produtos/$del_id" | jq .
       ;;
-    8)
+    9)
       echo ">>> Tentando excluir Categoria 1 (Integridade Referencial):"
       curl -s -X DELETE "$URL/categorias/1" | jq .
       ;;
-    9)
+    10)
       echo ">>> Acessando rota inexistente:"
       curl -s "$URL/rota-inexistente" | jq .
       ;;
@@ -83,7 +92,7 @@ while true; do
       break
       ;;
     *)
-      echo "Opcao invalida! Digite um numero de 0 a 9."
+      echo "Opcao invalida! Digite um numero de 0 a 10."
       ;;
   esac
 done
