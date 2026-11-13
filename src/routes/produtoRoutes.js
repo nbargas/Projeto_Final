@@ -7,6 +7,7 @@ router.get('/', safeHandler(produtoController.listarTodos));
 router.get('/:id', safeHandler(produtoController.obterPorId));
 router.post('/', safeHandler(produtoController.criar));
 router.put('/:id', safeHandler(produtoController.atualizar));
+router.patch('/:id', safeHandler(produtoController.atualizarParcial));
 router.delete('/:id', safeHandler(produtoController.remover));
 
 module.exports = router;
