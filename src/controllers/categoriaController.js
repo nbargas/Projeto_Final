@@ -10,11 +10,10 @@ exports.listarTodas = (req, res) => {
     }
     lista = lista.filter(c => c.nome.toLowerCase().includes(busca.trim().toLowerCase()));
   }
-  const resultado = lista.map(cat => ({
+  res.status(200).json(lista.map(cat => ({
     ...cat,
     totalProdutos: db.produtos.filter(p => p.categoriaId === cat.id).length
-  }));
-  res.status(200).json(resultado);
+  })));
 };
 
 exports.obterPorId = (req, res) => {

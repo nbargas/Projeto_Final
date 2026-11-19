@@ -41,13 +41,8 @@ const initialData = {
 
 function loadDB() {
   try {
-    if (fs.existsSync(DB_FILE)) {
-      const raw = fs.readFileSync(DB_FILE, 'utf-8');
-      return JSON.parse(raw);
-    }
-  } catch (e) {
-    console.error('Erro ao ler database.json, carregando dados padrao:', e.message);
-  }
+    if (fs.existsSync(DB_FILE)) return JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
+  } catch (e) {}
   const clone = JSON.parse(JSON.stringify(initialData));
   fs.writeFileSync(DB_FILE, JSON.stringify(clone, null, 2));
   return clone;
@@ -62,12 +57,7 @@ db.salvar = function () {
 
 db.resetar = function () {
   const clone = JSON.parse(JSON.stringify(initialData));
-  db.categorias = clone.categorias;
-  db.produtos = clone.produtos;
-  db.movimentacoes = clone.movimentacoes;
-  db.proximoIdCategoria = clone.proximoIdCategoria;
-  db.proximoIdProduto = clone.proximoIdProduto;
-  db.proximoIdMovimentacao = clone.proximoIdMovimentacao;
+  Object.assign(db, clone);
   db.salvar();
 };
 

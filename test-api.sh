@@ -1,98 +1,197 @@
 #!/bin/bash
 URL="http://localhost:1414"
 
-while true; do
-  echo ""
-  echo "=========================================="
-  echo "   CENTRAL DE TESTES DA API (ESTOQUE)     "
-  echo "=========================================="
-  echo "  [1] Ver todas as Categorias (GET)"
-  echo "  [2] Ver todos os Produtos (GET)"
-  echo "  [3] Filtrar Produtos por faixa de preco (GET)"
-  echo "  [4] Cadastrar nova Categoria (POST)"
-  echo "  [5] Cadastrar novo Produto (POST)"
-  echo "  [6] Atualizar Produto completo (PUT)"
-  echo "  [7] Atualizar apenas preco do Produto (PATCH)"
-  echo "  [8] Deletar Produto (DELETE)"
-  echo "  [9] Testar Erro 400 (Bloquear exclusao de categoria em uso)"
-  echo " [10] Testar Erro 404 (Rota inexistente)"
-  echo "  [0] Sair"
-  echo "=========================================="
-  read -p "Digite o numero da opcao desejada: " opcao
-  echo ""
+pausar() { echo ""; read -p "Pressione [ENTER] para voltar..." _; }
 
-  case "$opcao" in
-    1)
-      echo ">>> Listando Categorias:"
-      curl -s "$URL/categorias" | jq .
-      ;;
-    2)
-      echo ">>> Listando Produtos:"
-      curl -s "$URL/produtos" | jq .
-      ;;
-    3)
-      read -p "Preco minimo (Enter para 100): " min
-      read -p "Preco maximo (Enter para 300): " max
-      min=${min:-100}
-      max=${max:-300}
-      echo ">>> Filtrando Produtos (R\$ $min ate R\$ $max):"
-      curl -s "$URL/produtos?minPreco=$min&maxPreco=$max" | jq .
-      ;;
-    4)
-      read -p "Nome da nova Categoria: " cat_nome
-      echo ">>> Cadastrando Categoria '$cat_nome':"
-      curl -s -X POST "$URL/categorias" \
-        -H "Content-Type: application/json" \
-        -d "{\"nome\": \"$cat_nome\"}" | jq .
-      ;;
-    5)
-      read -p "Nome do Produto: " prod_nome
-      read -p "Preco (ex: 150.50): " prod_preco
-      read -p "Quantidade em estoque (ex: 10): " prod_qtd
-      read -p "ID da Categoria (ex: 1): " prod_cat
-      echo ">>> Cadastrando Produto '$prod_nome':"
-      curl -s -X POST "$URL/produtos" \
-        -H "Content-Type: application/json" \
-        -d "{\"nome\": \"$prod_nome\", \"preco\": ${prod_preco//,/.}, \"quantidade\": $prod_qtd, \"categoriaId\": $prod_cat}" | jq .
-      ;;
-    6)
-      read -p "ID do Produto que deseja atualizar: " upd_id
-      read -p "Novo Nome do Produto: " upd_nome
-      read -p "Novo Preco (ex: 199.90): " upd_preco
-      read -p "Nova Quantidade: " upd_qtd
-      read -p "ID da Categoria: " upd_cat
-      echo ">>> Atualizando Produto ID $upd_id (PUT):"
-      curl -s -X PUT "$URL/produtos/$upd_id" \
-        -H "Content-Type: application/json" \
-        -d "{\"nome\": \"$upd_nome\", \"preco\": ${upd_preco//,/.}, \"quantidade\": $upd_qtd, \"categoriaId\": $upd_cat}" | jq .
-      ;;
-    7)
-      read -p "ID do Produto para atualizar o preco: " patch_id
-      read -p "Novo Preco (ex: 99.90): " patch_preco
-      echo ">>> Atualizando parcialmente Produto ID $patch_id (PATCH):"
-      curl -s -X PATCH "$URL/produtos/$patch_id" \
-        -H "Content-Type: application/json" \
-        -d "{\"preco\": ${patch_preco//,/.}}" | jq .
-      ;;
-    8)
-      read -p "ID do Produto que deseja deletar: " del_id
-      echo ">>> Deletando Produto ID $del_id:"
-      curl -s -X DELETE "$URL/produtos/$del_id" | jq .
-      ;;
-    9)
-      echo ">>> Tentando excluir Categoria 1 (Integridade Referencial):"
-      curl -s -X DELETE "$URL/categorias/1" | jq .
-      ;;
-    10)
-      echo ">>> Acessando rota inexistente:"
-      curl -s "$URL/rota-inexistente" | jq .
-      ;;
-    0)
-      echo "Encerrando central de testes..."
-      break
-      ;;
-    *)
-      echo "Opcao invalida! Digite um numero de 0 a 10."
-      ;;
+submenu_categorias() {
+  while true; do
+    clear
+    echo "===================================================="
+    echo "   [1] GESTAO DE CATEGORIAS (6 OPERACOES)           "
+    echo "===================================================="
+    echo "  [1] Listar todas as Categorias (com contagem)"
+    echo "  [2] Buscar Categoria por Nome"
+    echo "  [3] Detalhar Categoria por ID (com seus produtos)"
+    echo "  [4] Cadastrar nova Categoria (POST)"
+    echo "  [5] Renomear Categoria existente (PUT)"
+    echo "  [6] Excluir Categoria vazia (DELETE)"
+    echo "  [0] Voltar ao Menu Principal"
+    echo "===================================================="
+    read -p "Escolha uma opcao: " op; echo ""
+    case "$op" in
+      1) curl -s "$URL/categorias" | jq .; pausar ;;
+      2) read -p "Termo de busca: " b; curl -s "$URL/categorias?busca=$b" | jq .; pausar ;;
+      3) read -p "ID da Categoria: " id; curl -s "$URL/categorias/$id" | jq .; pausar ;;
+      4) read -p "Nome da nova Categoria: " n; curl -s -X POST "$URL/categorias" -H "Content-Type: application/json" -d "{\"nome\":\"$n\"}" | jq .; pausar ;;
+      5) read -p "ID da Categoria: " id; read -p "Novo nome: " n; curl -s -X PUT "$URL/categorias/$id" -H "Content-Type: application/json" -d "{\"nome\":\"$n\"}" | jq .; pausar ;;
+      6) read -p "ID da Categoria para excluir: " id; curl -s -X DELETE "$URL/categorias/$id" | jq .; pausar ;;
+      0) break ;;
+      *) echo "Opcao invalida!"; sleep 1 ;;
+    esac
+  done
+}
+
+submenu_consultas_produtos() {
+  while true; do
+    clear
+    echo "===================================================="
+    echo "   [2] CONSULTAS E FILTROS DE PRODUTOS (8 OPCOES)   "
+    echo "===================================================="
+    echo "  [1] Listar todos os Produtos (GET)"
+    echo "  [2] Buscar Produto especifico por ID (GET /:id)"
+    echo "  [3] Buscar Produto por Nome (ex: Monitor, Teclado)"
+    echo "  [4] Filtrar Produtos por Categoria"
+    echo "  [5] Filtrar Produtos por Faixa de Preco (Min/Max)"
+    echo "  [6] Ordenar Produtos por Preco (Menor -> Maior)"
+    echo "  [7] Ordenar Produtos por Preco (Maior -> Menor)"
+    echo "  [8] Listar Produtos Paginados (Pagina e Limite)"
+    echo "  [0] Voltar ao Menu Principal"
+    echo "===================================================="
+    read -p "Escolha uma opcao: " op; echo ""
+    case "$op" in
+      1) curl -s "$URL/produtos" | jq .; pausar ;;
+      2) read -p "ID do Produto: " id; curl -s "$URL/produtos/$id" | jq .; pausar ;;
+      3) read -p "Nome ou parte do nome: " b; curl -s "$URL/produtos?busca=$b" | jq .; pausar ;;
+      4) read -p "ID da Categoria (1 a 5): " c; curl -s "$URL/produtos?categoriaId=$c" | jq .; pausar ;;
+      5) read -p "Preco minimo: " min; read -p "Preco maximo: " max; curl -s "$URL/produtos?minPreco=$min&maxPreco=$max" | jq .; pausar ;;
+      6) curl -s "$URL/produtos?sort=preco_asc" | jq .; pausar ;;
+      7) curl -s "$URL/produtos?sort=preco_desc" | jq .; pausar ;;
+      8) read -p "Numero da Pagina (ex: 1): " p; read -p "Itens por pagina (ex: 5): " l; curl -s "$URL/produtos?page=$p&limit=$l" | jq .; pausar ;;
+      0) break ;;
+      *) echo "Opcao invalida!"; sleep 1 ;;
+    esac
+  done
+}
+
+submenu_crud_produtos() {
+  while true; do
+    clear
+    echo "===================================================="
+    echo "   [3] CADASTRO E EDICAO DE PRODUTOS (6 OPCOES)     "
+    echo "===================================================="
+    echo "  [1] Cadastrar novo Produto (POST)"
+    echo "  [2] Atualizar Produto completo (PUT)"
+    echo "  [3] Atualizar apenas Preco do Produto (PATCH)"
+    echo "  [4] Atualizar apenas Nome do Produto (PATCH)"
+    echo "  [5] Atualizar apenas Categoria do Produto (PATCH)"
+    echo "  [6] Excluir Produto definitivamente (DELETE)"
+    echo "  [0] Voltar ao Menu Principal"
+    echo "===================================================="
+    read -p "Escolha uma opcao: " op; echo ""
+    case "$op" in
+      1) read -p "Nome: " nome; read -p "Preco: " preco; read -p "Quantidade: " qtd; read -p "ID Categoria: " cat; curl -s -X POST "$URL/produtos" -H "Content-Type: application/json" -d "{\"nome\":\"$nome\",\"preco\":${preco//,/.},\"quantidade\":$qtd,\"categoriaId\":$cat}" | jq .; pausar ;;
+      2) read -p "ID: " id; read -p "Novo Nome: " nome; read -p "Novo Preco: " preco; read -p "Nova Qtd: " qtd; read -p "Novo ID Cat: " cat; curl -s -X PUT "$URL/produtos/$id" -H "Content-Type: application/json" -d "{\"nome\":\"$nome\",\"preco\":${preco//,/.},\"quantidade\":$qtd,\"categoriaId\":$cat}" | jq .; pausar ;;
+      3) read -p "ID: " id; read -p "Novo Preco: " preco; curl -s -X PATCH "$URL/produtos/$id" -H "Content-Type: application/json" -d "{\"preco\":${preco//,/.}}" | jq .; pausar ;;
+      4) read -p "ID: " id; read -p "Novo Nome: " nome; curl -s -X PATCH "$URL/produtos/$id" -H "Content-Type: application/json" -d "{\"nome\":\"$nome\"}" | jq .; pausar ;;
+      5) read -p "ID: " id; read -p "Novo ID Categoria: " cat; curl -s -X PATCH "$URL/produtos/$id" -H "Content-Type: application/json" -d "{\"categoriaId\":$cat}" | jq .; pausar ;;
+      6) read -p "ID para deletar: " id; curl -s -X DELETE "$URL/produtos/$id" | jq .; pausar ;;
+      0) break ;;
+      *) echo "Opcao invalida!"; sleep 1 ;;
+    esac
+  done
+}
+
+submenu_estoque() {
+  while true; do
+    clear
+    echo "===================================================="
+    echo "   [4] MOVIMENTACAO DE ESTOQUE E PRECOS (5 OPCOES)  "
+    echo "===================================================="
+    echo "  [1] Registrar ENTRADA de mercadoria (+ Estoque)"
+    echo "  [2] Registrar SAIDA / Venda (- Estoque)"
+    echo "  [3] Ver Historico completo de Movimentacoes"
+    echo "  [4] Filtrar Historico por Produto especifico"
+    echo "  [5] Aplicar Reajuste Percentual de Precos em Lote"
+    echo "  [0] Voltar ao Menu Principal"
+    echo "===================================================="
+    read -p "Escolha uma opcao: " op; echo ""
+    case "$op" in
+      1) read -p "ID do Produto: " id; read -p "Qtd entrada: " qtd; read -p "Observacao: " obs; curl -s -X POST "$URL/produtos/$id/movimentacao" -H "Content-Type: application/json" -d "{\"tipo\":\"ENTRADA\",\"quantidade\":$qtd,\"observacao\":\"$obs\"}" | jq .; pausar ;;
+      2) read -p "ID do Produto: " id; read -p "Qtd saida: " qtd; read -p "Observacao: " obs; curl -s -X POST "$URL/produtos/$id/movimentacao" -H "Content-Type: application/json" -d "{\"tipo\":\"SAIDA\",\"quantidade\":$qtd,\"observacao\":\"$obs\"}" | jq .; pausar ;;
+      3) curl -s "$URL/produtos/estoque/movimentacoes" | jq .; pausar ;;
+      4) read -p "ID do Produto: " id; curl -s "$URL/produtos/estoque/movimentacoes?produtoId=$id" | jq .; pausar ;;
+      5) read -p "ID Categoria (Enter para TODAS): " cat; read -p "Percentual (ex: 10 ou -15): " perc; [ -z "$cat" ] && BODY="{\"percentual\":${perc//,/.}}" || BODY="{\"categoriaId\":$cat,\"percentual\":${perc//,/.}}"; curl -s -X POST "$URL/produtos/reajuste-precos" -H "Content-Type: application/json" -d "$BODY" | jq .; pausar ;;
+      0) break ;;
+      *) echo "Opcao invalida!"; sleep 1 ;;
+    esac
+  done
+}
+
+submenu_relatorios() {
+  while true; do
+    clear
+    echo "===================================================="
+    echo "   [5] RELATORIOS GERENCIAIS E AUDITORIA (4 OPCOES) "
+    echo "===================================================="
+    echo "  [1] Dashboard Executivo (Patrimonio, Totais e Resumo)"
+    echo "  [2] Alerta de Estoque Critico (<= 10 unidades)"
+    echo "  [3] Ranking de Produtos com Menor Estoque"
+    echo "  [4] Health Check da API (Status e Uptime)"
+    echo "  [0] Voltar ao Menu Principal"
+    echo "===================================================="
+    read -p "Escolha uma opcao: " op; echo ""
+    case "$op" in
+      1) curl -s "$URL/produtos/relatorio/geral" | jq .; pausar ;;
+      2) curl -s "$URL/produtos?estoqueCritico=true" | jq .; pausar ;;
+      3) curl -s "$URL/produtos?sort=qtd_asc" | jq .; pausar ;;
+      4) curl -s "$URL/health" | jq .; pausar ;;
+      0) break ;;
+      *) echo "Opcao invalida!"; sleep 1 ;;
+    esac
+  done
+}
+
+submenu_seguranca() {
+  while true; do
+    clear
+    echo "===================================================="
+    echo "   [6] TESTES DE BLINDAGEM E ERROS HTTP (6 OPCOES)  "
+    echo "===================================================="
+    echo "  [1] Erro 400 - Bloquear exclusao de categoria em uso"
+    echo "  [2] Erro 400 - Bloquear saida maior que estoque atual"
+    echo "  [3] Erro 400 - Bloquear caracteres especiais / SQLi"
+    echo "  [4] Erro 415 - Enviar requisicao sem Content-Type JSON"
+    echo "  [5] Erro 404 - Acessar rota inexistente na API"
+    echo "  [6] SISTEMA  - Restaurar banco de dados original"
+    echo "  [0] Voltar ao Menu Principal"
+    echo "===================================================="
+    read -p "Escolha uma opcao: " op; echo ""
+    case "$op" in
+      1) curl -s -X DELETE "$URL/categorias/1" | jq .; pausar ;;
+      2) curl -s -X POST "$URL/produtos/6/movimentacao" -H "Content-Type: application/json" -d '{"tipo":"SAIDA","quantidade":9999}' | jq .; pausar ;;
+      3) curl -s -X POST "$URL/produtos" -H "Content-Type: application/json" -d '{"nome":"<script>alert(1)</script>","preco":10,"quantidade":1,"categoriaId":1}' | jq .; pausar ;;
+      4) curl -s -X POST "$URL/categorias" -d "nome=TesteSemJson" | jq .; pausar ;;
+      5) curl -s "$URL/rota-fantasma-teste" | jq .; pausar ;;
+      6) curl -s -X POST "$URL/produtos/sistema/reset" -H "Content-Type: application/json" -d '{}' | jq .; pausar ;;
+      0) break ;;
+      *) echo "Opcao invalida!"; sleep 1 ;;
+    esac
+  done
+}
+
+while true; do
+  clear
+  echo "===================================================="
+  echo "   CENTRAL DE CONTROLE DA API - PROJETO FINAL       "
+  echo "   (35 Operacoes Integradas em 6 Modulos)           "
+  echo "===================================================="
+  echo "  [1] Gestao de Categorias           (6 opcoes)"
+  echo "  [2] Consultas e Filtros de Produtos (8 opcoes)"
+  echo "  [3] Cadastro e Edicao de Produtos   (6 opcoes)"
+  echo "  [4] Movimentacao de Estoque e Preco (5 opcoes)"
+  echo "  [5] Relatorios e Dashboard          (4 opcoes)"
+  echo "  [6] Testes de Seguranca e Sistema   (6 opcoes)"
+  echo "  [0] Sair"
+  echo "===================================================="
+  read -p "Selecione o modulo desejado: " modulo
+  case "$modulo" in
+    1) submenu_categorias ;;
+    2) submenu_consultas_produtos ;;
+    3) submenu_crud_produtos ;;
+    4) submenu_estoque ;;
+    5) submenu_relatorios ;;
+    6) submenu_seguranca ;;
+    0) echo "Encerrando central de testes..."; break ;;
+    *) echo "Modulo invalido!"; sleep 1 ;;
   esac
 done
