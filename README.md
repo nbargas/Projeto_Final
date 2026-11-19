@@ -1,182 +1,215 @@
-# 📦 Sistema de Gestão de Estoque — API RESTful
+# 📦 API RESTful de Controle de Estoque — Projeto Final SENAI
 
-API RESTful desenvolvida como **Projeto Final Integrador (PBE1)** no **SENAI "Jairo Cândido" (Mauá/SP)**. A aplicação realiza o gerenciamento completo de estoque (**Produtos** e **Categorias**), aplicando o padrão arquitetural **MVC (Model-View-Controller)**, validações rigorosas de entrada, integridade referencial de dados e middlewares globais de auditoria e tratamento de exceções.
+API RESTful desenvolvida em **Node.js** e **Express** seguindo o padrão arquitetural **MVC (Model-View-Controller)**, com persistência automática em arquivo JSON (`database.json`), regras de integridade referencial, blindagem contra entradas inválidas e suíte interativa de testes via terminal (`Bash` + `curl` + `jq`).
 
----
+___
 
 ## 📋 Índice
 
-1. Autores e Contexto Acadêmico
-2. Arquitetura e Tecnologias
-3. Estrutura de Diretórios
-4. Regras de Negócio e Segurança
-5. Documentação dos Endpoints
-6. Exemplos de Requisição e Resposta (JSON)
-7. Instalação e Execução Local
-8. Suíte de Testes e Validação
-9. Contribuição e Padrão de Commits
-10. Licença
+- [Visão Geral e Funcionalidades](#-visão-geral-e-funcionalidades)
 
----
+- [Arquitetura do Projeto](#-arquitetura-do-projeto)
 
-## 👥 Autores e Contexto Acadêmico
+- [Tecnologias Utilizadas](#-tecnologias-utilizadas)
 
-* **Arthur Nunes** — [@nbargas](https://github.com/nbargas)  
-  *Responsabilidades:* Arquitetura MVC, Endpoints de Categorias, Testes Automatizados e DevOps.
-* **Lívia V. Santos** — [@liviavalentimS](https://github.com/liviavalentimS)  
-  *Responsabilidades:* Endpoints de Produtos, Filtros via Query Params, Middlewares e Documentação.
+- [Instalação e Execução](#-instalação-e-execução)
 
-* **Instituição:** Escola SENAI "Jairo Cândido" — Mauá / SP
-* **Unidade Curricular:** Programação Back-End 1 (PBE1)
+- [Documentação dos Endpoints](#-documentação-dos-endpoints)
 
----
+- [Regras de Negócio e Blindagem](#-regras-de-negócio-e-blindagem)
 
-## 🛠️ Arquitetura e Tecnologias
+- [Códigos de Status HTTP](#-códigos-de-status-http)
 
-* **Runtime:** Node.js (v18.x ou superior)
-* **Framework Web:** Express.js (v4.x)
-* **Padrão Arquitetural:** MVC (Separação clara entre Rotas, Controladores e Camada de Dados)
-* **Versionamento:** Git e GitHub seguindo a especificação *Conventional Commits*
-* **Ambiente de Desenvolvimento:** Google Cloud Shell (Debian Linux)
-* **Ferramentas de Homologação HTTP:** Bash Script (`test-api.sh`), `curl`, `jq`, Postman e VS Code REST Client
+- [Central Interativa de Testes (35 Operações)](#-central-interativa-de-testes-35-operações)
 
----
+- [Equipe](#-equipe)
 
-## 📂 Estrutura de Diretórios
+___
 
+## 🚀 Visão Geral e Funcionalidades
+
+- **CRUD Completo de Categorias e Produtos:** Suporte integral aos métodos `GET`, `POST`, `PUT`, `PATCH` e `DELETE`.
+
+- **Persistência Automática em Disco:** Todas as alterações são gravadas em `src/data/database.json`, mantendo os dados salvos mesmo após reiniciar o servidor, com endpoint dedicado para restaurar a base inicial.
+
+- **Filtros, Ordenação e Paginação:** Busca textual por nome, filtro por categoria, faixa de preço (`minPreco` e `maxPreco`), filtro de estoque crítico, ordenação dinâmica (`sort`) e paginação (`page` e `limit`).
+
+- **Controle de Movimentação de Estoque:** Registro auditável de entradas (`ENTRADA`) e saídas (`SAIDA`) com bloqueio automático para evitar saldo negativo.
+
+- **Dashboard Gerencial:** Cálculo automático de patrimônio total em estoque, resumo financeiro por categoria, produto mais caro/barato e alerta de itens em nível crítico.
+
+- **Blindagem e Tratamento Global de Erros:** Validação de cabeçalho `Content-Type`, limite de payload (`100kb`), regex contra caracteres especiais/injeção e tratamento centralizado de exceções.
+
+___
+
+## 🗂️ Arquitetura do Projeto
 
 Projeto_Final/
-├── .env.example              # Modelo de variáveis de ambiente (PORT)
-├── .gitignore                # Arquivos e pastas ignorados pelo Git
-├── CONTRIBUTING.md           # Guia de colaboração e padrão de commits
-├── LICENSE                   # Licença MIT
-├── README.md                 # Documentação técnica oficial do projeto
-├── index.js                  # Entry point da aplicação e Middlewares Globais
-├── package.json              # Dependências e scripts NPM (npm start)
-├── postman_collection.json   # Coleção pronta para importação no Postman/Insomnia
-├── requests.http             # Arquivo de requisições para extensão REST Client
-├── test-api.sh               # Script Bash automatizado para validação de rotas
+├── index.js                              # Ponto de entrada, middlewares globais e inicialização na porta 1414
+├── package.json                          # Dependências e metadados do projeto
+├── test-api.sh                           # Central de Testes interativa em Bash (6 módulos / 35 operações)
+├── requests.http                         # Coleção de requisições HTTP para testes manuais
+├── postman_collection.json               # Coleção exportada para Postman
+├── README.md                             # Documentação técnica do projeto
 └── src/
-    ├── controllers/          # Regras de negócio e tratamento das requisições HTTP
-    │   ├── categoriaController.js
-    │   └── produtoController.js
-    ├── data/                 # Persistência de dados em memória (Mock Database)
-    │   └── db.js
-    └── routes/               # Definição e mapeamento dos endpoints REST
-        ├── categoriaRoutes.js
-        └── produtoRoutes.js
-🛡️ Regras de Negócio e Segurança
-Integridade Referencial: O sistema bloqueia a exclusão (DELETE /categorias/:id) de qualquer categoria que possua produtos ativos vinculados a ela, retornando o status HTTP 400 Bad Request e evitando registros órfãos.
+    ├── controllers/
+    │   ├── categoriaController.js        # Regras de negócio e CRUD de categorias
+    │   └── produtoController.js          # Regras de negócio, CRUD, estoque e relatórios de produtos
+    ├── data/
+    │   ├── db.js                         # Camada de persistência (leitura, gravação e reset do JSON)
+    │   └── database.json                 # Base de dados persistida automaticamente
+    ├── middlewares/
+    │   └── errorHandler.js               # Wrapper seguro (safeHandler) e tratamento global de erros
+    └── routes/
+        ├── categoriaRoutes.js            # Definição das rotas de /categorias
+        └── produtoRoutes.js              # Definição das rotas de /produtos
+🛠️ Tecnologias Utilizadas
+Runtime: Node.js
 
-Validação de Payload:
+Framework Web: Express.js
 
-Categorias: Exige o preenchimento obrigatório do campo nome.
+Persistência: File System nativo (fs / JSON)
 
-Produtos: Exige nome, preco e um categoriaId válido existente na base.
+Automação e Testes CLI: Bash Script, curl e jq
 
-Middlewares Globais:
+Ambiente: Linux (Debian / Google Cloud Shell)
 
-Logger de Auditoria: Registra no console o método HTTP, a URL acessada e o timestamp de cada requisição.
+⚙️ Instalação e Execução
+Clonar o repositório e instalar dependências:
 
-Tratamento de Rota Inexistente (404): Intercepta chamadas para endpoints não mapeados e devolve um JSON padronizado.
-
-Tratamento Global de Erros (500): Captura exceções inesperadas no servidor sem expor stack traces sensíveis ao cliente.
-
-🌐 Documentação dos Endpoints
-📁 Gestão de Categorias (/categorias)
-GET /categorias — Lista todas as categorias cadastradas. (Sucesso: 200 OK)
-
-GET /categorias/:id — Busca uma categoria específica pelo ID. (Sucesso: 200 OK | Erro: 404 Not Found)
-
-POST /categorias — Cadastra uma nova categoria. (Sucesso: 201 Created | Erro: 400 Bad Request)
-
-PUT /categorias/:id — Atualiza os dados de uma categoria existente. (Sucesso: 200 OK | Erro: 400 ou 404)
-
-DELETE /categorias/:id — Remove uma categoria, caso não haja produtos vinculados. (Sucesso: 200 OK | Erro: 400 ou 404)
-
-📦 Gestão de Produtos (/produtos)
-GET /produtos — Lista todos os produtos, aceitando filtros via Query Params. (Sucesso: 200 OK)
-
-GET /produtos/:id — Busca um produto específico pelo ID. (Sucesso: 200 OK | Erro: 404 Not Found)
-
-POST /produtos — Cadastra um novo produto vinculado a uma categoria válida. (Sucesso: 201 Created | Erro: 400 Bad Request)
-
-PUT /produtos/:id — Atualiza os dados de um produto existente. (Sucesso: 200 OK | Erro: 400 ou 404)
-
-DELETE /produtos/:id — Remove um produto do estoque. (Sucesso: 200 OK | Erro: 404 Not Found)
-
-🔍 Parâmetros de Filtro Disponíveis (GET /produtos)
-?busca=termo — Filtra produtos pelo nome (case-insensitive).
-
-?minPreco=50 — Retorna produtos com preço maior ou igual ao valor informado.
-
-?maxPreco=500 — Retorna produtos com preço menor ou igual ao valor informado.
-
-?categoriaId=1 — Filtra produtos pertencentes a uma categoria específica.
-
-📨 Exemplos de Requisição e Resposta (JSON)
-1. Cadastrar Produto (POST /produtos)
-Request Body:
-
-JSON
-{
-  "nome": "Teclado Mecanico RGB",
-  "preco": 249.90,
-  "categoriaId": 1
-}
-Response (201 Created):
-
-JSON
-{
-  "id": 4,
-  "nome": "Teclado Mecanico RGB",
-  "preco": 249.90,
-  "categoriaId": 1
-}
-2. Bloqueio de Integridade Referencial (DELETE /categorias/1)
-Response (400 Bad Request):
-
-JSON
-{
-  "status": "erro",
-  "mensagem": "Nao e possivel remover esta categoria pois existem produtos associados a ela."
-}
-🚀 Instalação e Execução Local
-Pré-requisitos
-Node.js (versão 18.x ou superior)
-
-Git
-
-Passo a Passo
 Bash
-# 1. Clone o repositório
-git clone [https://github.com/nbargas/Projeto_Final.git](https://github.com/nbargas/Projeto_Final.git)
-
-# 2. Acesse o diretório do projeto
+git clone <URL_DO_REPOSITORIO>
 cd Projeto_Final
-
-# 3. Instale as dependências
 npm install
-
-# 4. Inicie o servidor
-npm start
-A API estará disponível em: http://localhost:1414
-
-🧪 Suíte de Testes e Validação
-O repositório disponibiliza três métodos integrados para homologação rápida dos endpoints:
-
-Script Automatizado via Terminal (Bash + cURL + jq):
+Iniciar o servidor na porta 1414:
 
 Bash
+node index.js
+Verificar se a API está online:
+
+Bash
+curl -s http://localhost:1414/health | jq .
+📡 Documentação dos Endpoints
+1. Sistema / Saúde
+GET /health — Verifica o status online e o tempo de atividade (uptime) da API (200 OK).
+
+2. Categorias (/categorias)
+GET /categorias — Lista todas as categorias com contagem de produtos vinculados. Aceita filtro ?busca=termo (200 OK / 400 Bad Request).
+
+GET /categorias/:id — Retorna os detalhes da categoria e a lista de produtos pertencentes a ela (200 OK / 400 Bad Request / 404 Not Found).
+
+POST /categorias — Cadastra uma nova categoria (201 Created / 400 Bad Request / 415 Unsupported Media Type).
+
+PUT /categorias/:id — Atualiza o nome de uma categoria existente (200 OK / 400 Bad Request / 404 Not Found).
+
+DELETE /categorias/:id — Remove uma categoria; bloqueado caso existam produtos vinculados (200 OK / 400 Bad Request / 404 Not Found).
+
+Exemplo de payload (POST /categorias):
+
+JSON
+{
+  "nome": "Armazenamento e Redes"
+}
+3. Produtos (/produtos)
+GET /produtos — Lista produtos com suporte a filtros, ordenação e paginação (200 OK / 400 Bad Request).
+
+GET /produtos/:id — Retorna um produto específico com o nome da categoria e o valor total em estoque (200 OK / 400 Bad Request / 404 Not Found).
+
+POST /produtos — Cadastra um novo produto vinculado a uma categoria válida (201 Created / 400 Bad Request / 415 Unsupported Media Type).
+
+PUT /produtos/:id — Atualiza todos os campos de um produto existente (200 OK / 400 Bad Request / 404 Not Found).
+
+PATCH /produtos/:id — Atualiza parcialmente um ou mais campos (nome, preco, quantidade, categoriaId) (200 OK / 400 Bad Request / 404 Not Found).
+
+DELETE /produtos/:id — Remove definitivamente um produto do estoque (200 OK / 400 Bad Request / 404 Not Found).
+
+Parâmetros de consulta (Query Params) disponíveis em GET /produtos:
+
+categoriaId — Filtra pelo ID da categoria (ex: ?categoriaId=1)
+
+minPreco e maxPreco — Filtra por faixa de preço (ex: ?minPreco=100&maxPreco=500)
+
+busca — Busca parcial pelo nome do produto (ex: ?busca=Monitor)
+
+estoqueCritico=true — Retorna apenas itens com 10 ou menos unidades
+
+sort — Ordenação dinâmica: preco_asc, preco_desc, nome_asc ou qtd_asc
+
+page e limit — Paginação dos resultados (ex: ?page=1&limit=5)
+
+Exemplo de payload (POST /produtos):
+
+JSON
+{
+  "nome": "Monitor Gamer 27 Polegadas",
+  "preco": 1499.90,
+  "quantidade": 12,
+  "categoriaId": 3
+}
+4. Estoque, Relatórios e Operações em Lote
+POST /produtos/:id/movimentacao — Registra ENTRADA ou SAIDA de estoque e grava no histórico (200 OK / 400 Bad Request / 404 Not Found).
+
+GET /produtos/estoque/movimentacoes — Lista o histórico completo de movimentações; aceita ?produtoId=1 (200 OK).
+
+GET /produtos/relatorio/geral — Retorna o Dashboard Executivo com patrimônio total, alertas de estoque crítico e resumo por categoria (200 OK).
+
+POST /produtos/reajuste-precos — Aplica reajuste percentual (%) em todos os produtos ou em uma categoria específica (200 OK / 400 Bad Request).
+
+POST /produtos/sistema/reset — Restaura o banco de dados para os 20 produtos e 5 categorias originais (200 OK).
+
+Exemplo de payload (POST /produtos/1/movimentacao):
+
+JSON
+{
+  "tipo": "SAIDA",
+  "quantidade": 3,
+  "observacao": "Venda realizada no balcao"
+}
+🛡️ Regras de Negócio e Blindagem
+Integridade Referencial: Não é permitido cadastrar ou editar um produto apontando para um categoriaId inexistente, nem excluir uma categoria que ainda possua produtos associados.
+
+Prevenção de Estoque Negativo: Operações de SAIDA são bloqueadas (400 Bad Request) caso a quantidade solicitada seja maior que o saldo disponível.
+
+Sanitização de Entrada: Campos de texto passam por expressão regular (^[a-zA-Z0-9\s\-_.]+$), bloqueando tags HTML/scripts e caracteres especiais maliciosos.
+
+Unicidade de Nomes: Não são permitidas duas categorias ou dois produtos com o mesmo nome (comparação case-insensitive).
+
+Validação de Protocolo: Requisições POST, PUT e PATCH exigem Content-Type: application/json (retornando 415 caso contrário) e possuem limite máximo de 100kb por requisição.
+
+📊 Códigos de Status HTTP
+200 OK — Consultas, atualizações (PUT/PATCH), movimentações, relatórios e exclusões executadas com sucesso.
+
+201 Created — Cadastro bem-sucedido de nova categoria ou novo produto.
+
+400 Bad Request — Dados ausentes/inválidos, estoque insuficiente, exclusão de categoria em uso ou JSON malformado.
+
+404 Not Found — ID de produto/categoria inexistente ou rota não mapeada na API.
+
+415 Unsupported Media Type — Envio de POST, PUT ou PATCH sem cabeçalho application/json.
+
+500 Internal Server Error — Falha inesperada capturada pelo middleware global de segurança.
+
+🖥️ Central Interativa de Testes (35 Operações)
+O projeto inclui o script test-api.sh, organizado em 6 módulos hierárquicos que cobrem todas as 35 operações da API diretamente pelo terminal:
+
+Bash
+chmod +x test-api.sh
 ./test-api.sh
-Postman / Insomnia:
-Importe o arquivo postman_collection.json disponível na raiz do repositório para acessar todas as rotas pré-configuradas.
+Módulo 1 — Gestão de Categorias (6 opções): Listagem com contagem, busca por nome, detalhamento com produtos, cadastro (POST), edição (PUT) e exclusão (DELETE).
 
-VS Code (Extensão REST Client):
-Abra o arquivo requests.http e clique em Send Request acima de cada endpoint.
+Módulo 2 — Consultas e Filtros de Produtos (8 opções): Listagem geral, busca por ID, busca por nome, filtro por categoria, faixa de preço, ordenação crescente/decrescente e paginação.
 
-🤝 Contribuição e Padrão de Commits
-Este projeto adota o padrão Conventional Commits (feat:, fix:, docs:, test:, chore:). Para instruções detalhadas sobre o fluxo de sincronização e boas práticas de desenvolvimento da equipe, consulte o arquivo CONTRIBUTING.md.
+Módulo 3 — Cadastro e Edição de Produtos (6 opções): Cadastro (POST), atualização completa (PUT), atualização parcial (PATCH de preço, nome ou categoria) e exclusão (DELETE).
 
-📄 Licença
-Este projeto foi desenvolvido para fins acadêmicos no SENAI "Jairo Cândido" (Mauá/SP) e está licenciado sob a Licença MIT — veja o arquivo LICENSE para mais detalhes.
+Módulo 4 — Movimentação de Estoque e Preços (5 opções): Entrada de mercadoria, saída/venda, histórico geral, histórico por produto e reajuste percentual em lote.
+
+Módulo 5 — Relatórios Gerenciais e Auditoria (4 opções): Dashboard executivo patrimonial, alerta de estoque crítico, ranking de menor estoque e health check.
+
+Módulo 6 — Testes de Blindagem e Sistema (6 opções): Simulação automatizada dos erros 400, 404, 415, bloqueio de XSS/caracteres especiais e reset do banco de dados.
+
+👥 Equipe
+Arthur Nunes
+
+Lívia
+
+Projeto desenvolvido para o curso técnico no SENAI.
