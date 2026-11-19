@@ -2,27 +2,10 @@
 
 API RESTful desenvolvida em **Node.js** e **Express** seguindo o padrão arquitetural **MVC (Model-View-Controller)**, com persistência automática em arquivo JSON (`database.json`), regras de integridade referencial, blindagem contra entradas inválidas e suíte interativa de testes via terminal (`Bash` + `curl` + `jq`).
 
-___
-
-## 📋 Índice
-
-- [Visão Geral e Funcionalidades](#-visão-geral-e-funcionalidades)
-
-- [Arquitetura do Projeto](#-arquitetura-do-projeto)
-
-- [Tecnologias Utilizadas](#-tecnologias-utilizadas)
-
-- [Instalação e Execução](#-instalação-e-execução)
-
-- [Documentação dos Endpoints](#-documentação-dos-endpoints)
-
-- [Regras de Negócio e Blindagem](#-regras-de-negócio-e-blindagem)
-
-- [Códigos de Status HTTP](#-códigos-de-status-http)
-
-- [Central Interativa de Testes (35 Operações)](#-central-interativa-de-testes-35-operações)
-
-- [Equipe](#-equipe)
+- **Ambiente de Hospedagem:** Servidor Linux Debian (`genesis` — `10.85.198.243`)
+- **Porta da Aplicação:** `1414`
+- **URL Base Rede Local / Genesis:** `http://10.85.198.243:1414`
+- **URL Base Localhost:** `http://localhost:1414`
 
 ___
 
@@ -72,23 +55,43 @@ Persistência: File System nativo (fs / JSON)
 
 Automação e Testes CLI: Bash Script, curl e jq
 
-Ambiente: Linux (Debian / Google Cloud Shell)
+Infraestrutura: Servidor Debian Linux (genesis — 10.85.198.243)
 
-⚙️ Instalação e Execução
-Clonar o repositório e instalar dependências:
+⚙️ Passo a Passo: Instalação e Execução no Servidor Genesis
+Passo 1 — Acessar o servidor via SSH
+Conecte-se ao servidor Genesis utilizando seu usuário de rede:
 
 Bash
-git clone <URL_DO_REPOSITORIO>
+ssh arthur.nunes@10.85.198.243
+Passo 2 — Clonar o repositório e instalar as dependências
+Caso ainda não tenha o projeto na máquina, baixe o código e instale os pacotes do Express:
+
+Bash
+git clone [https://github.com/ArthurNunes23/Projeto_Final.git](https://github.com/ArthurNunes23/Projeto_Final.git)
 cd Projeto_Final
 npm install
-Iniciar o servidor na porta 1414:
+(Caso o diretório já exista, apenas entre na pasta e atualize com cd ~/Projeto_Final && git pull.)
+
+Passo 3 — Iniciar o servidor da API na porta 1414
+Execute o arquivo principal para colocar a API no ar:
 
 Bash
 node index.js
-Verificar se a API está online:
+A saída confirmará que o servidor está ativo:
+
+Plaintext
+Servidor blindado rodando na porta 1414 com persistencia em JSON
+Passo 4 — Verificar se a API está respondendo
+Em uma segunda aba do terminal (ou de qualquer máquina na mesma rede), execute o teste de saúde:
 
 Bash
-curl -s http://localhost:1414/health | jq .
+curl -s [http://10.85.198.243:1414/health](http://10.85.198.243:1414/health) | jq .
+Passo 5 — Abrir a Central Interativa de Testes (35 Operações)
+Com o servidor rodando na primeira aba, abra a central de testes na segunda aba:
+
+Bash
+chmod +x test-api.sh
+./test-api.sh
 📡 Documentação dos Endpoints
 1. Sistema / Saúde
 GET /health — Verifica o status online e o tempo de atividade (uptime) da API (200 OK).
@@ -104,12 +107,12 @@ PUT /categorias/:id — Atualiza o nome de uma categoria existente (200 OK / 400
 
 DELETE /categorias/:id — Remove uma categoria; bloqueado caso existam produtos vinculados (200 OK / 400 Bad Request / 404 Not Found).
 
-Exemplo de payload (POST /categorias):
+Exemplo de requisição no servidor Genesis (POST /categorias):
 
-JSON
-{
-  "nome": "Armazenamento e Redes"
-}
+Bash
+curl -s -X POST [http://10.85.198.243:1414/categorias](http://10.85.198.243:1414/categorias) \
+  -H "Content-Type: application/json" \
+  -d '{"nome": "Armazenamento e Redes"}' | jq .
 3. Produtos (/produtos)
 GET /produtos — Lista produtos com suporte a filtros, ordenação e paginação (200 OK / 400 Bad Request).
 
@@ -137,15 +140,12 @@ sort — Ordenação dinâmica: preco_asc, preco_desc, nome_asc ou qtd_asc
 
 page e limit — Paginação dos resultados (ex: ?page=1&limit=5)
 
-Exemplo de payload (POST /produtos):
+Exemplo de requisição no servidor Genesis (POST /produtos):
 
-JSON
-{
-  "nome": "Monitor Gamer 27 Polegadas",
-  "preco": 1499.90,
-  "quantidade": 12,
-  "categoriaId": 3
-}
+Bash
+curl -s -X POST [http://10.85.198.243:1414/produtos](http://10.85.198.243:1414/produtos) \
+  -H "Content-Type: application/json" \
+  -d '{"nome": "Monitor Gamer 27 Polegadas", "preco": 1499.90, "quantidade": 12, "categoriaId": 3}' | jq .
 4. Estoque, Relatórios e Operações em Lote
 POST /produtos/:id/movimentacao — Registra ENTRADA ou SAIDA de estoque e grava no histórico (200 OK / 400 Bad Request / 404 Not Found).
 
@@ -157,14 +157,12 @@ POST /produtos/reajuste-precos — Aplica reajuste percentual (%) em todos os pr
 
 POST /produtos/sistema/reset — Restaura o banco de dados para os 20 produtos e 5 categorias originais (200 OK).
 
-Exemplo de payload (POST /produtos/1/movimentacao):
+Exemplo de movimentação no servidor Genesis (POST /produtos/1/movimentacao):
 
-JSON
-{
-  "tipo": "SAIDA",
-  "quantidade": 3,
-  "observacao": "Venda realizada no balcao"
-}
+Bash
+curl -s -X POST [http://10.85.198.243:1414/produtos/1/movimentacao](http://10.85.198.243:1414/produtos/1/movimentacao) \
+  -H "Content-Type: application/json" \
+  -d '{"tipo": "SAIDA", "quantidade": 3, "observacao": "Venda realizada no balcao"}' | jq .
 🛡️ Regras de Negócio e Blindagem
 Integridade Referencial: Não é permitido cadastrar ou editar um produto apontando para um categoriaId inexistente, nem excluir uma categoria que ainda possua produtos associados.
 
@@ -190,11 +188,8 @@ Validação de Protocolo: Requisições POST, PUT e PATCH exigem Content-Type: a
 500 Internal Server Error — Falha inesperada capturada pelo middleware global de segurança.
 
 🖥️ Central Interativa de Testes (35 Operações)
-O projeto inclui o script test-api.sh, organizado em 6 módulos hierárquicos que cobrem todas as 35 operações da API diretamente pelo terminal:
+O script test-api.sh organiza todas as 35 operações da API em 6 módulos hierárquicos no terminal:
 
-Bash
-chmod +x test-api.sh
-./test-api.sh
 Módulo 1 — Gestão de Categorias (6 opções): Listagem com contagem, busca por nome, detalhamento com produtos, cadastro (POST), edição (PUT) e exclusão (DELETE).
 
 Módulo 2 — Consultas e Filtros de Produtos (8 opções): Listagem geral, busca por ID, busca por nome, filtro por categoria, faixa de preço, ordenação crescente/decrescente e paginação.
@@ -212,4 +207,4 @@ Arthur Nunes
 
 Lívia
 
-Projeto desenvolvido para o curso técnico no SENAI.
+Projeto Final desenvolvido para o curso técnico no SENAI.
