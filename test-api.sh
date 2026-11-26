@@ -1,11 +1,105 @@
 #!/bin/bash
 URL="http://localhost:1414"
 
+renderizar_graficos_terminal() {
+  clear
+  echo -e "\033[1;36m========================================================================\033[0m"
+  echo -e "\033[1;37m       ANALYTICS & GRAFICOS NO TERMINAL (ASCII BI — GENESIS :1414)\033[0m"
+  echo -e "\033[1;36m========================================================================\033[0m"
+
+  # [FLUXO] Coleta produtos e categorias diretamente da API REST
+  local PRODS_JSON=$(curl -s "$URL/produtos?limit=1000")
+  local CATS_JSON=$(curl -s "$URL/categorias")
+
+  if [ -z "$PRODS_JSON" ] || ! echo "$PRODS_JSON" | jq -e . >/dev/null 2>&1; then
+    # [ERRO] Bloqueia execucao caso o servidor esteja offline
+    echo -e "\n\033[1;31m[ERRO] API offline em $URL. Inicie o servidor com: node index.js\033[0m"
+    pausar
+    return
+  fi
+
+  # [TRANSF] Calcula KPIs gerais e valores maximos para escalonar as barras
+  local RESUMO=$(echo "$PRODS_JSON" | jq -r '
+    (.dados // .produtos // .) as $p |
+    {
+      total: ($p | length),
+      unidades: ($p | map(.quantidade) | add // 0),
+      patrimonio: ($p | map(.preco * .quantidade) | add // 0),
+      criticos: ($p | map(select(.quantidade <= 10)) | length),
+      maxQtd: ($p | map(.quantidade) | max // 1)
+    } | "\(.total)|\(.unidades)|\(.patrimonio)|\(.criticos)|\(.maxQtd)"
+  ')
+
+  IFS="|" read -r TOTAL UNIDADES PATRIMONIO CRITICOS MAX_QTD <<< "$RESUMO"
+  local NORMAIS=$((TOTAL - CRITICOS))
+
+  echo -e "\n\033[1;33m[1] INDICADORES EXECUTIVOS (KPIs)\033[0m"
+  printf "  Patrimonio Total : \033[1;32mR$ %.2f\033[0m   |   Produtos Ativos : \033[1;36m%s itens\033[0m\n" "$PATRIMONIO" "$TOTAL"
+  printf "  Volume Fisico    : \033[1;37m%s unidades\033[0m   |   Alerta Critico  : \033[1;31m%s itens (<= 10)\033[0m\n" "$UNIDADES" "$CRITICOS"
+
+  echo -e "\n\033[1;33m[2] NIVEL DE ESTOQUE POR PRODUTO (\033[1;36m■ Normal\033[0m  \033[1;31m■ Critico <= 10\033[0m)\033[0m"
+  echo "  ----------------------------------------------------------------------"
+  # [TRANSF] Gera barras proporcionais de ate 32 blocos para cada produto
+  echo "$PRODS_JSON" | jq -r --argjson max "$MAX_QTD" '
+    (.dados // .produtos // .) | sort_by(.quantidade)[] |
+    (((.quantidade / (if $max == 0 then 1 else $max end)) * 32) | floor) as $len |
+    "\(.nome[0:24])|\(.quantidade)|\(if $len < 1 and .quantidade > 0 then 1 else $len end)"
+  ' | while IFS="|" read -r NOME QTD LEN; do
+    BARRA=$(printf "%0.s█" $(seq 1 "$LEN" 2>/dev/null))
+    if [ "$QTD" -le 10 ]; then
+      printf "  %-24s | \033[1;31m%-32s\033[0m %3s un.\n" "$NOME" "$BARRA" "$QTD"
+    else
+      printf "  %-24s | \033[1;36m%-32s\033[0m %3s un.\n" "$NOME" "$BARRA" "$QTD"
+    fi
+  done
+
+  echo -e "\n\033[1;33m[3] PATRIMONIO FINANCEIRO POR CATEGORIA (R$)\033[0m"
+  echo "  ----------------------------------------------------------------------"
+  # [TRANSF] Agrupa produtos por categoria e calcula barra proporcional ao valor financeiro
+  jq -n --argjson p "$PRODS_JSON" --argjson c "$CATS_JSON" '
+    ($p.dados // $p.produtos // $p) as $prods |
+    ($c.dados // $c.categorias // $c) as $cats |
+    ($cats | map({
+      nome: .nome,
+      valor: (.id as $cid | ($prods | map(select(.categoriaId == $cid) | (.preco * .quantidade)) | add // 0))
+    })) as $res |
+    ($res | map(.valor) | max // 1) as $maxVal |
+    $res | sort_by(-.valor)[] |
+    (((.valor / (if $maxVal == 0 then 1 else $maxVal end)) * 28) | floor) as $len |
+    "\(.nome[0:24])|\(.valor)|\(if $len < 1 and .valor > 0 then 1 else $len end)"
+  ' | while IFS="|" read -r CAT_NOME VAL LEN; do
+    BARRA=$(printf "%0.s▓" $(seq 1 "$LEN" 2>/dev/null))
+    printf "  %-24s | \033[1;32m%-28s\033[0m R$ %9.2f\n" "$CAT_NOME" "$BARRA" "$VAL"
+  done
+
+  echo -e "\n\033[1;33m[4] SAUDE DO INVENTARIO (SAUDAVEIS vs CRITICOS)\033[0m"
+  echo "  ----------------------------------------------------------------------"
+  local PCT_OK=0
+  local PCT_CRIT=0
+  if [ "$TOTAL" -gt 0 ]; then
+    PCT_OK=$((NORMAIS * 100 / TOTAL))
+    PCT_CRIT=$((CRITICOS * 100 / TOTAL))
+  fi
+  local B_OK=$(printf "%0.s█" $(seq 1 $((PCT_OK / 3)) 2>/dev/null))
+  local B_CRIT=$(printf "%0.s█" $(seq 1 $((PCT_CRIT / 3)) 2>/dev/null))
+  printf "  Saudaveis (> 10 un.)     | \033[1;32m%-33s\033[0m %3s%% (%s)\n" "$B_OK" "$PCT_OK" "$NORMAIS"
+  printf "  Criticos  (<= 10 un.)    | \033[1;31m%-33s\033[0m %3s%% (%s)\n" "$B_CRIT" "$PCT_CRIT" "$CRITICOS"
+  echo -e "\033[1;36m========================================================================\033[0m"
+  pausar
+}
+
+
 # [FLUXO] Envio de requisicao HTTP ou leitura de entrada do usuario
 pausar() { echo ""; read -p "Pressione [ENTER] para voltar..." _; }
 
 submenu_categorias() {
-  while true; do
+  
+
+
+
+
+
+while true; do
     clear
     echo "===================================================="
     echo "   [1] GESTAO DE CATEGORIAS (6 OPERACOES)           "
@@ -230,6 +324,7 @@ while true; do
   echo "  [5] Relatorios e Dashboard          (4 opcoes)"
   echo "  [6] Testes de Seguranca e Sistema   (6 opcoes)"
   echo "  [7] Grafico                         (Dashboard Web)"
+  echo "  [8] Graficos no Terminal            (ASCII BI)"
   echo "  [0] Sair"
   echo "===================================================="
   # [FLUXO] Envio de requisicao HTTP ou leitura de entrada do usuario
@@ -260,6 +355,7 @@ while true; do
       echo "=========================================================="
       pausar
       ;;
+    8) renderizar_graficos_terminal ;;
     0) echo "Encerrando central de testes..."; break ;;
     # [ERRO] Simulacao ou verificacao de falha HTTP e blindagem
     *) echo "Modulo invalido!"; sleep 1 ;;
