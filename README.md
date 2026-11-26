@@ -1,182 +1,181 @@
-# 📦 Sistema de Gestão de Estoque — API RESTful
+# 📦 API RESTful de Controle de Estoque — Projeto Final SENAI
 
-API RESTful desenvolvida como **Projeto Final Integrador (PBE1)** no **SENAI "Jairo Cândido" (Mauá/SP)**. A aplicação realiza o gerenciamento completo de estoque (**Produtos** e **Categorias**), aplicando o padrão arquitetural **MVC (Model-View-Controller)**, validações rigorosas de entrada, integridade referencial de dados e middlewares globais de auditoria e tratamento de exceções.
+> **Sistema de Gestão de Inventário, Movimentações e Relatórios Gerenciais**  
+> Desenvolvido em **Node.js + Express** sob a arquitetura **MVC**, com persistência automática em arquivo JSON (`database.json`), blindagem de segurança e suíte interativa de testes via CLI.
 
----
+___
 
-## 📋 Índice
+## 🌐 Ambiente & Acesso
 
-1. Autores e Contexto Acadêmico
-2. Arquitetura e Tecnologias
-3. Estrutura de Diretórios
-4. Regras de Negócio e Segurança
-5. Documentação dos Endpoints
-6. Exemplos de Requisição e Resposta (JSON)
-7. Instalação e Execução Local
-8. Suíte de Testes e Validação
-9. Contribuição e Padrão de Commits
-10. Licença
+- **Servidor:** `genesis` (`10.85.198.243`)
+- **Porta:** `1414`
+- **URL Base (Rede / Genesis):** `http://10.85.198.243:1414`
+- **URL Base (Localhost):** `http://localhost:1414`
+- **Formato:** JSON (`application/json`)
 
----
+___
 
-## 👥 Autores e Contexto Acadêmico
+## ✨ Principais Recursos
 
-* **Arthur Nunes** — [@nbargas](https://github.com/nbargas)  
-  *Responsabilidades:* Arquitetura MVC, Endpoints de Categorias, Testes Automatizados e DevOps.
-* **Lívia V. Santos** — [@liviavalentimS](https://github.com/liviavalentimS)  
-  *Responsabilidades:* Endpoints de Produtos, Filtros via Query Params, Middlewares e Documentação.
+- **CRUD Completo:** Operações `GET`, `POST`, `PUT`, `PATCH` e `DELETE` para categorias e produtos.
+- **Persistência em Disco:** Gravação automática em `src/data/database.json` com opção de restauração (`reset`).
+- **Buscas Avançadas:** Filtros por nome, categoria, faixa de preço, estoque crítico, ordenação (`sort`) e paginação (`page`/`limit`).
+- **Controle de Estoque:** Registro de `ENTRADA` e `SAIDA` com histórico auditável e bloqueio de saldo negativo.
+- **Dashboard Gerencial:** Patrimônio total, resumo financeiro por categoria e alertas de reposição.
+- **Blindagem HTTP:** Validação de `Content-Type`, limite de payload (`100kb`) e sanitização contra XSS/injeção.
 
-* **Instituição:** Escola SENAI "Jairo Cândido" — Mauá / SP
-* **Unidade Curricular:** Programação Back-End 1 (PBE1)
+___
 
----
+## 🚀 Como Subir no Servidor Genesis
 
-## 🛠️ Arquitetura e Tecnologias
+1. **Conectar via SSH ao servidor Genesis:**
+   ```bash
+   ssh arthur.nunes@10.85.198.243
+Entrar na pasta e iniciar a API na porta 1414:
 
-* **Runtime:** Node.js (v18.x ou superior)
-* **Framework Web:** Express.js (v4.x)
-* **Padrão Arquitetural:** MVC (Separação clara entre Rotas, Controladores e Camada de Dados)
-* **Versionamento:** Git e GitHub seguindo a especificação *Conventional Commits*
-* **Ambiente de Desenvolvimento:** Google Cloud Shell (Debian Linux)
-* **Ferramentas de Homologação HTTP:** Bash Script (`test-api.sh`), `curl`, `jq`, Postman e VS Code REST Client
+Bash
+cd ~/Projeto_Final && git pull && node index.js
+Abrir a Central Interativa (35 operações) em uma segunda aba:
 
----
-
-## 📂 Estrutura de Diretórios
+Bash
+cd ~/Projeto_Final && ./test-api.sh
+🧪 Roteiro Passo a Passo de Testes
 
 
+1️⃣ Verificar Saúde da API (Health Check)
+Bash
+curl -s [http://10.85.198.243:1414/health](http://10.85.198.243:1414/health) | jq .
+
+
+2️⃣ Consultar Categorias e Produtos Iniciais
+Bash
+curl -s [http://10.85.198.243:1414/categorias](http://10.85.198.243:1414/categorias) | jq .
+curl -s [http://10.85.198.243:1414/produtos](http://10.85.198.243:1414/produtos) | jq .
+
+
+3️⃣ Testar Filtros, Ordenação e Paginação
+Bash
+# Busca por nome
+curl -s "[http://10.85.198.243:1414/produtos?busca=Monitor](http://10.85.198.243:1414/produtos?busca=Monitor)" | jq .
+
+# Faixa de preço
+curl -s "[http://10.85.198.243:1414/produtos?minPreco=100&maxPreco=300](http://10.85.198.243:1414/produtos?minPreco=100&maxPreco=300)" | jq .
+
+# Ordenação crescente e paginação
+curl -s "[http://10.85.198.243:1414/produtos?sort=preco_asc&page=1&limit=5](http://10.85.198.243:1414/produtos?sort=preco_asc&page=1&limit=5)" | jq .
+
+
+4️⃣ Cadastrar Categoria e Produto (POST)
+Bash
+curl -s -X POST [http://10.85.198.243:1414/categorias](http://10.85.198.243:1414/categorias) \
+  -H "Content-Type: application/json" \
+  -d '{"nome": "Redes e Conectividade"}' | jq .
+
+curl -s -X POST [http://10.85.198.243:1414/produtos](http://10.85.198.243:1414/produtos) \
+  -H "Content-Type: application/json" \
+  -d '{"nome": "Roteador Wi-Fi 6 Dual Band", "preco": 349.90, "quantidade": 15, "categoriaId": 6}' | jq .
+
+  
+5️⃣ Atualizar Produto Parcial (PATCH) e Completo (PUT)
+Bash
+curl -s -X PATCH [http://10.85.198.243:1414/produtos/21](http://10.85.198.243:1414/produtos/21) \
+  -H "Content-Type: application/json" \
+  -d '{"preco": 299.90}' | jq .
+
+curl -s -X PUT [http://10.85.198.243:1414/produtos/21](http://10.85.198.243:1414/produtos/21) \
+  -H "Content-Type: application/json" \
+  -d '{"nome": "Roteador Wi-Fi 6 Mesh", "preco": 329.90, "quantidade": 20, "categoriaId": 6}' | jq .
+
+  
+6️⃣ Movimentar Estoque (ENTRADA / SAIDA) e Ver Histórico
+Bash
+curl -s -X POST [http://10.85.198.243:1414/produtos/1/movimentacao](http://10.85.198.243:1414/produtos/1/movimentacao) \
+  -H "Content-Type: application/json" \
+  -d '{"tipo": "ENTRADA", "quantidade": 10, "observacao": "Reposicao"}' | jq .
+
+curl -s -X POST [http://10.85.198.243:1414/produtos/1/movimentacao](http://10.85.198.243:1414/produtos/1/movimentacao) \
+  -H "Content-Type: application/json" \
+  -d '{"tipo": "SAIDA", "quantidade": 4, "observacao": "Venda"}' | jq .
+
+curl -s [http://10.85.198.243:1414/produtos/estoque/movimentacoes](http://10.85.198.243:1414/produtos/estoque/movimentacoes) | jq .
+
+
+7️⃣ Gerar Dashboard Executivo e Reajustar Preços em Lote
+Bash
+curl -s [http://10.85.198.243:1414/produtos/relatorio/geral](http://10.85.198.243:1414/produtos/relatorio/geral) | jq .
+
+curl -s -X POST [http://10.85.198.243:1414/produtos/reajuste-precos](http://10.85.198.243:1414/produtos/reajuste-precos) \
+  -H "Content-Type: application/json" \
+  -d '{"categoriaId": 1, "percentual": 10}' | jq .
+
+  
+8️⃣ Testar Blindagem e Erros HTTP (400, 404, 415)
+Bash
+# 400 - Categoria em uso
+curl -s -X DELETE [http://10.85.198.243:1414/categorias/1](http://10.85.198.243:1414/categorias/1) | jq .
+
+# 400 - Estoque insuficiente
+curl -s -X POST [http://10.85.198.243:1414/produtos/1/movimentacao](http://10.85.198.243:1414/produtos/1/movimentacao) \
+  -H "Content-Type: application/json" \
+  -d '{"tipo": "SAIDA", "quantidade": 9999}' | jq .
+
+# 415 - Sem Content-Type JSON
+curl -s -X POST [http://10.85.198.243:1414/categorias](http://10.85.198.243:1414/categorias) -d "nome=Teste" | jq .
+
+# 404 - Rota inexistente
+curl -s [http://10.85.198.243:1414/rota-inexistente](http://10.85.198.243:1414/rota-inexistente) | jq .
+
+
+9️⃣ Limpar Testes (DELETE) e Restaurar Banco Original (Reset)
+Bash
+curl -s -X DELETE [http://10.85.198.243:1414/produtos/21](http://10.85.198.243:1414/produtos/21) | jq .
+curl -s -X DELETE [http://10.85.198.243:1414/categorias/6](http://10.85.198.243:1414/categorias/6) | jq .
+
+curl -s -X POST [http://10.85.198.243:1414/produtos/sistema/reset](http://10.85.198.243:1414/produtos/sistema/reset) \
+  -H "Content-Type: application/json" -d '{}' | jq .
+  
+📡 Mapa Rápido de Endpoints & Arquitetura
+Arquitetura MVC:
+
+Plaintext
 Projeto_Final/
-├── .env.example              # Modelo de variáveis de ambiente (PORT)
-├── .gitignore                # Arquivos e pastas ignorados pelo Git
-├── CONTRIBUTING.md           # Guia de colaboração e padrão de commits
-├── LICENSE                   # Licença MIT
-├── README.md                 # Documentação técnica oficial do projeto
-├── index.js                  # Entry point da aplicação e Middlewares Globais
-├── package.json              # Dependências e scripts NPM (npm start)
-├── postman_collection.json   # Coleção pronta para importação no Postman/Insomnia
-├── requests.http             # Arquivo de requisições para extensão REST Client
-├── test-api.sh               # Script Bash automatizado para validação de rotas
+├── index.js                         # Servidor Express (porta 1414) e middlewares
+├── test-api.sh                      # Menu CLI interativo (6 módulos / 35 opções)
 └── src/
-    ├── controllers/          # Regras de negócio e tratamento das requisições HTTP
-    │   ├── categoriaController.js
-    │   └── produtoController.js
-    ├── data/                 # Persistência de dados em memória (Mock Database)
-    │   └── db.js
-    └── routes/               # Definição e mapeamento dos endpoints REST
-        ├── categoriaRoutes.js
-        └── produtoRoutes.js
-🛡️ Regras de Negócio e Segurança
-Integridade Referencial: O sistema bloqueia a exclusão (DELETE /categorias/:id) de qualquer categoria que possua produtos ativos vinculados a ela, retornando o status HTTP 400 Bad Request e evitando registros órfãos.
+    ├── controllers/                 # categoriaController.js & produtoController.js
+    ├── data/                        # db.js & database.json (persistência)
+    ├── middlewares/                 # errorHandler.js (tratamento global de erros)
+    └── routes/                      # categoriaRoutes.js & produtoRoutes.js
+Endpoints Disponíveis:
 
-Validação de Payload:
+GET /health — Status online e uptime
 
-Categorias: Exige o preenchimento obrigatório do campo nome.
+GET / POST /categorias — Listar e criar categorias
 
-Produtos: Exige nome, preco e um categoriaId válido existente na base.
+GET / PUT / DELETE /categorias/:id — Detalhar, renomear e excluir categoria
 
-Middlewares Globais:
+GET / POST /produtos — Listar (com filtros/paginação) e criar produto
 
-Logger de Auditoria: Registra no console o método HTTP, a URL acessada e o timestamp de cada requisição.
+GET / PUT / PATCH / DELETE /produtos/:id — Detalhar, editar e remover produto
 
-Tratamento de Rota Inexistente (404): Intercepta chamadas para endpoints não mapeados e devolve um JSON padronizado.
+POST /produtos/:id/movimentacao — Registrar entrada ou saída de estoque
 
-Tratamento Global de Erros (500): Captura exceções inesperadas no servidor sem expor stack traces sensíveis ao cliente.
+GET /produtos/estoque/movimentacoes — Histórico de movimentações
 
-🌐 Documentação dos Endpoints
-📁 Gestão de Categorias (/categorias)
-GET /categorias — Lista todas as categorias cadastradas. (Sucesso: 200 OK)
+GET /produtos/relatorio/geral — Dashboard executivo patrimonial
 
-GET /categorias/:id — Busca uma categoria específica pelo ID. (Sucesso: 200 OK | Erro: 404 Not Found)
+POST /produtos/reajuste-precos — Reajuste percentual em lote
 
-POST /categorias — Cadastra uma nova categoria. (Sucesso: 201 Created | Erro: 400 Bad Request)
-
-PUT /categorias/:id — Atualiza os dados de uma categoria existente. (Sucesso: 200 OK | Erro: 400 ou 404)
-
-DELETE /categorias/:id — Remove uma categoria, caso não haja produtos vinculados. (Sucesso: 200 OK | Erro: 400 ou 404)
-
-📦 Gestão de Produtos (/produtos)
-GET /produtos — Lista todos os produtos, aceitando filtros via Query Params. (Sucesso: 200 OK)
-
-GET /produtos/:id — Busca um produto específico pelo ID. (Sucesso: 200 OK | Erro: 404 Not Found)
-
-POST /produtos — Cadastra um novo produto vinculado a uma categoria válida. (Sucesso: 201 Created | Erro: 400 Bad Request)
-
-PUT /produtos/:id — Atualiza os dados de um produto existente. (Sucesso: 200 OK | Erro: 400 ou 404)
-
-DELETE /produtos/:id — Remove um produto do estoque. (Sucesso: 200 OK | Erro: 404 Not Found)
-
-🔍 Parâmetros de Filtro Disponíveis (GET /produtos)
-?busca=termo — Filtra produtos pelo nome (case-insensitive).
-
-?minPreco=50 — Retorna produtos com preço maior ou igual ao valor informado.
-
-?maxPreco=500 — Retorna produtos com preço menor ou igual ao valor informado.
-
-?categoriaId=1 — Filtra produtos pertencentes a uma categoria específica.
-
-📨 Exemplos de Requisição e Resposta (JSON)
-1. Cadastrar Produto (POST /produtos)
-Request Body:
-
-JSON
-{
-  "nome": "Teclado Mecanico RGB",
-  "preco": 249.90,
-  "categoriaId": 1
-}
-Response (201 Created):
-
-JSON
-{
-  "id": 4,
-  "nome": "Teclado Mecanico RGB",
-  "preco": 249.90,
-  "categoriaId": 1
-}
-2. Bloqueio de Integridade Referencial (DELETE /categorias/1)
-Response (400 Bad Request):
-
-JSON
-{
-  "status": "erro",
-  "mensagem": "Nao e possivel remover esta categoria pois existem produtos associados a ela."
-}
-🚀 Instalação e Execução Local
-Pré-requisitos
-Node.js (versão 18.x ou superior)
-
-Git
-
-Passo a Passo
-Bash
-# 1. Clone o repositório
-git clone [https://github.com/nbargas/Projeto_Final.git](https://github.com/nbargas/Projeto_Final.git)
-
-# 2. Acesse o diretório do projeto
-cd Projeto_Final
-
-# 3. Instale as dependências
-npm install
-
-# 4. Inicie o servidor
-npm start
-A API estará disponível em: http://localhost:1414
-
-🧪 Suíte de Testes e Validação
-O repositório disponibiliza três métodos integrados para homologação rápida dos endpoints:
-
-Script Automatizado via Terminal (Bash + cURL + jq):
-
-Bash
-./test-api.sh
-Postman / Insomnia:
-Importe o arquivo postman_collection.json disponível na raiz do repositório para acessar todas as rotas pré-configuradas.
-
-VS Code (Extensão REST Client):
-Abra o arquivo requests.http e clique em Send Request acima de cada endpoint.
-
-🤝 Contribuição e Padrão de Commits
-Este projeto adota o padrão Conventional Commits (feat:, fix:, docs:, test:, chore:). Para instruções detalhadas sobre o fluxo de sincronização e boas práticas de desenvolvimento da equipe, consulte o arquivo CONTRIBUTING.md.
+POST /produtos/sistema/reset — Restaurar dados originais
 
 📄 Licença
-Este projeto foi desenvolvido para fins acadêmicos no SENAI "Jairo Cândido" (Mauá/SP) e está licenciado sob a Licença MIT — veja o arquivo LICENSE para mais detalhes.
+Este projeto está licenciado sob a Licença MIT (Copyright (c) 2026 Arthur Nunes & Lívia).
+
+É livre para uso, cópia, modificação e distribuição para fins educacionais e comerciais, desde que mantidos os créditos originais.
+
+👥 Equipe do Projeto
+💻 Arthur Nunes — Desenvolvimento Back-end (Node.js/Express), Arquitetura MVC, Persistência JSON e Automação CLI
+
+📄 Lívia — Documentação Técnica, Estruturação e Padronização nas Normas ABNT
+
+Projeto Final desenvolvido para o Curso Técnico em Desenvolvimento de Sistemas — SENAI.
