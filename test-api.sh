@@ -229,6 +229,7 @@ while true; do
   echo "  [4] Movimentacao de Estoque e Preco (5 opcoes)"
   echo "  [5] Relatorios e Dashboard          (4 opcoes)"
   echo "  [6] Testes de Seguranca e Sistema   (6 opcoes)"
+  echo "  [7] Grafico                         (Dashboard Web)"
   echo "  [0] Sair"
   echo "===================================================="
   # [FLUXO] Envio de requisicao HTTP ou leitura de entrada do usuario
@@ -240,6 +241,25 @@ while true; do
     4) submenu_estoque ;;
     5) submenu_relatorios ;;
     6) submenu_seguranca ;;
+    7)
+      clear
+      echo "=========================================================="
+      echo "      DASHBOARD EXECUTIVO & GRAFICOS DE ESTOQUE"
+      echo "=========================================================="
+      echo ""
+      # [FLUXO] Verifica se o servidor Genesis esta online e exibe a URL da View
+      if curl -s "$URL/health" >/dev/null 2>&1; then
+        echo -e "Status do Servidor : \033[1;32mONLINE (Genesis :1414)\033[0m"
+      else
+        echo -e "Status do Servidor : \033[1;33mOFFLINE (Inicie com: node index.js)\033[0m"
+      fi
+      echo ""
+      echo -e "Acesse no navegador: \033[1;36mhttp://10.85.198.243:1414/grafico\033[0m"
+      echo ""
+      echo "Dica: Segure CTRL e clique no link acima para abrir direto!"
+      echo "=========================================================="
+      pausar
+      ;;
     0) echo "Encerrando central de testes..."; break ;;
     # [ERRO] Simulacao ou verificacao de falha HTTP e blindagem
     *) echo "Modulo invalido!"; sleep 1 ;;

@@ -1,3 +1,4 @@
+const path = require('path');
 const express = require('express');
 const categoriaRoutes = require('./src/routes/categoriaRoutes');
 const produtoRoutes = require('./src/routes/produtoRoutes');
@@ -30,6 +31,11 @@ app.get('/health', (req, res) => {
 });
 
 // [FLUXO] Entrada de dados, roteamento HTTP ou leitura da base
+// [FLUXO] Entrega a View HTML com graficos interativos de controle de estoque
+app.get('/grafico', (req, res) => {
+  res.sendFile(path.join(__dirname, 'src', 'views', 'grafico.html'));
+});
+
 app.use('/categorias', categoriaRoutes);
 // [FLUXO] Entrada de dados, roteamento HTTP ou leitura da base
 app.use('/produtos', produtoRoutes);
