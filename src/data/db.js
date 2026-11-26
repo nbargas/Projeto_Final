@@ -41,9 +41,13 @@ const initialData = {
 
 function loadDB() {
   try {
+    // [FLUXO] Leitura de entrada da requisicao ou persistencia
     if (fs.existsSync(DB_FILE)) return JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
+  // [ERRO] Tratamento de excecao ou bloqueio de validacao HTTP
   } catch (e) {}
+  // [TRANSF] Processamento, filtragem ou serializacao de dados
   const clone = JSON.parse(JSON.stringify(initialData));
+  // [TRANSF] Processamento, filtragem ou serializacao de dados
   fs.writeFileSync(DB_FILE, JSON.stringify(clone, null, 2));
   return clone;
 }
@@ -52,10 +56,12 @@ const db = loadDB();
 
 db.salvar = function () {
   const { salvar, resetar, ...dados } = db;
+  // [TRANSF] Processamento, filtragem ou serializacao de dados
   fs.writeFileSync(DB_FILE, JSON.stringify(dados, null, 2));
 };
 
 db.resetar = function () {
+  // [TRANSF] Processamento, filtragem ou serializacao de dados
   const clone = JSON.parse(JSON.stringify(initialData));
   Object.assign(db, clone);
   db.salvar();

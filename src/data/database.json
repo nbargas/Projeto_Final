@@ -163,8 +163,31 @@
       "categoriaId": 2
     }
   ],
-  "movimentacoes": [],
+  "movimentacoes": [
+    {
+      "id": 2,
+      "produtoId": 13,
+      "produtoNome": "Placa de Video RTX 4060 8GB",
+      "tipo": "SAIDA",
+      "quantidade": 10,
+      "saldoAnterior": 16,
+      "saldoAtual": 6,
+      "observacao": "Movimentacao padrao",
+      "data": "2026-11-19T13:36:57.703Z"
+    },
+    {
+      "id": 1,
+      "produtoId": 13,
+      "produtoNome": "Placa de Video RTX 4060 8GB",
+      "tipo": "ENTRADA",
+      "quantidade": 10,
+      "saldoAnterior": 6,
+      "saldoAtual": 16,
+      "observacao": "Movimentacao padrao",
+      "data": "2026-11-19T13:36:23.220Z"
+    }
+  ],
   "proximoIdCategoria": 6,
   "proximoIdProduto": 21,
-  "proximoIdMovimentacao": 1
+  "proximoIdMovimentacao": 3
 }

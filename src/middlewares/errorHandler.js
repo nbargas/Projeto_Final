@@ -1,7 +1,9 @@
 // Wrapper para garantir que nenhum erro em rota/controller derrube o servidor
 const safeHandler = (fn) => (req, res, next) => {
   try {
+    // [ERRO] Tratamento de excecao ou bloqueio de validacao HTTP
     Promise.resolve(fn(req, res, next)).catch(next);
+  // [ERRO] Tratamento de excecao ou bloqueio de validacao HTTP
   } catch (err) {
     next(err);
   }
@@ -11,6 +13,7 @@ const safeHandler = (fn) => (req, res, next) => {
 const globalErrorHandler = (err, req, res, next) => {
   // Erro de sintaxe no JSON enviado pelo cliente
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    // [ERRO] Tratamento de excecao ou bloqueio de validacao HTTP
     return res.status(400).json({
       status: 'erro',
       codigo: 400,
@@ -38,6 +41,7 @@ const globalErrorHandler = (err, req, res, next) => {
 
   // Qualquer outra falha inesperada (nunca derruba o servidor)
   console.error(`[ERRO INTERNO ${new Date().toISOString()}]:`, err.message);
+  // [ERRO] Tratamento de excecao ou bloqueio de validacao HTTP
   return res.status(500).json({
     status: 'erro',
     codigo: 500,
