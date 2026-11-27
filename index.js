@@ -72,46 +72,71 @@ app.get('/api/v1/analytics', (req, res) => {
   });
 });
 
-// [FLUXO] Endpoint oficial do Desafio Bonus: Dashboard consolidado de estoque
+// [FLUXO] Endpoint oficial do Desafio Bonus: Dashboard visual HTML e JSON
 app.get('/api/v1/dashboard', (req, res) => {
   const { lerBanco } = require('./src/data/db');
   const db = lerBanco();
   const produtos = db.produtos || [];
   const categorias = db.categorias || [];
 
-  // [TRANSF] Agregacao de metricas por categoria e ranking de estoque
+  // [TRANSF] Calcula metricas, patrimonio por categoria e itens criticos
   const porCategoria = categorias.map(c => {
     const itens = produtos.filter(p => p.categoriaId === c.id);
-    const totalUnidades = itens.reduce((s, p) => s + p.quantidade, 0);
-    const valorPatrimonio = itens.reduce((s, p) => s + (p.preco * p.quantidade), 0);
     return {
       categoria: c.nome,
       qtdProdutos: itens.length,
-      totalUnidades,
-      valorPatrimonio: Number(valorPatrimonio.toFixed(2))
+      totalUnidades: itens.reduce((s, p) => s + p.quantidade, 0),
+      valorPatrimonio: Number(itens.reduce((s, p) => s + (p.preco * p.quantidade), 0).toFixed(2))
     };
   });
 
-  const criticos = produtos.filter(p => p.quantidade <= 10).map(p => ({
-    id: p.id,
-    nome: p.nome,
-    quantidade: p.quantidade
-  }));
-
-  res.status(200).json({
+  const payload = {
     projeto: "API Controle de Estoque — SENAI",
     servidor: "Genesis (10.85.198.243:1414)",
-    timestamp: new Date().toISOString(),
     kpis: {
       totalProdutos: produtos.length,
-      totalCategorias: categorias.length,
       unidadesEmEstoque: produtos.reduce((s, p) => s + p.quantidade, 0),
       patrimonioTotal: Number(produtos.reduce((s, p) => s + (p.preco * p.quantidade), 0).toFixed(2)),
-      alertasCriticos: criticos.length
+      alertasCriticos: produtos.filter(p => p.quantidade <= 10).length
     },
     porCategoria,
-    alertasEstoqueCritico: criticos
-  });
+    produtos
+  };
+
+  if (req.headers.accept && req.headers.accept.includes("application/json")) {
+    return res.status(200).json(payload);
+  }
+
+  const maxQtd = Math.max(...produtos.map(p => p.quantidade), 1);
+  const barrasProdutos = produtos.map(p => {
+    const pct = Math.round((p.quantidade / maxQtd) * 100);
+    const cor = p.quantidade <= 10 ? "#ef4444" : "#38bdf8";
+    return `<div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:4px">
+        <span>${p.nome}</span><strong>${p.quantidade} un.</strong>
+      </div>
+      <div style="background:#1e293b;border-radius:6px;height:18px;overflow:hidden">
+        <div style="width:${pct}%;background:${cor};height:100%"></div>
+      </div>
+    </div>`;
+  }).join("");
+
+  res.status(200).send(`<!DOCTYPE html>
+  <html lang="pt-BR"><head><meta charset="UTF-8"><title>Dashboard API — SENAI</title></head>
+  <body style="background:#0f172a;color:#f8fafc;font-family:sans-serif;padding:30px;max-width:900px;margin:auto">
+    <h1 style="color:#38bdf8">Dashboard Analitico — /api/v1/dashboard</h1>
+    <p style="color:#94a3b8">Servidor Genesis (10.85.198.243:1414) | Desafio Bonus SENAI</p>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin:25px 0">
+      <div style="background:#1e293b;padding:15px;border-radius:10px"><small>Produtos</small><h2>${payload.kpis.totalProdutos}</h2></div>
+      <div style="background:#1e293b;padding:15px;border-radius:10px"><small>Unidades</small><h2>${payload.kpis.unidadesEmEstoque}</h2></div>
+      <div style="background:#1e293b;padding:15px;border-radius:10px"><small>Patrimonio</small><h2 style="color:#4ade80">R$ ${payload.kpis.patrimonioTotal.toFixed(2)}</h2></div>
+      <div style="background:#1e293b;padding:15px;border-radius:10px"><small>Criticos (&le;10)</small><h2 style="color:#f87171">${payload.kpis.alertasCriticos}</h2></div>
+    </div>
+    <div style="background:#1e293b;padding:20px;border-radius:12px">
+      <h3 style="margin-top:0">Nivel de Estoque por Produto</h3>
+      ${barrasProdutos}
+    </div>
+  </body></html>`);
 });
 
 app.use('/categorias', categoriaRoutes);
