@@ -1,0 +1,8 @@
+2026-11-27T10:00:01 [FLUXO] POST /usuarios 201 12ms
+2026-11-27T10:00:03 [TRANSF] usuario normalizado: ana@x.com
+2026-11-27T10:00:07 [ERRO] 400 POST /usuarios campos ausentes
+2026-11-27T10:00:09 [FLUXO] GET /usuarios 200 8ms
+2026-11-27T10:00:12 [ERRO] 500 GET /usuarios falha ao ler usuarios
+2026-11-27T10:00:15 [FLUXO] GET /usuarios 200 9ms
+2026-11-27T10:00:18 [TRANSF] usuario normalizado: bia@x.com
+2026-11-27T10:00:21 [ERRO] 404 GET /produtos rota inexistente
