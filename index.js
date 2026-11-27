@@ -36,6 +36,42 @@ app.get('/grafico', (req, res) => {
   res.sendFile(path.join(__dirname, 'src', 'views', 'grafico.html'));
 });
 
+// [FLUXO] Endpoint analitico ETL: extrai produtos, agrega metricas e retorna dataset estruturado
+app.get('/api/v1/analytics', (req, res) => {
+  const { lerBanco } = require('./src/data/db');
+  const db = lerBanco();
+  const produtos = db.produtos || [];
+  const categorias = db.categorias || [];
+
+  // [TRANSF] Cruzamento relacional, calculo de patrimonio e classificacao de risco
+  const dataset = produtos.map(p => {
+    const cat = categorias.find(c => c.id === p.categoriaId);
+    return {
+      id: p.id,
+      produto: p.nome.toUpperCase(),
+      categoria: cat ? cat.nome.toUpperCase() : "SEM CATEGORIA",
+      precoUnitario: p.preco,
+      quantidade: p.quantidade,
+      valorTotalEstoque: Number((p.preco * p.quantidade).toFixed(2)),
+      statusEstoque: p.quantidade <= 10 ? "CRITICO" : "NORMAL"
+    };
+  });
+
+  const patrimonioTotal = dataset.reduce((acc, item) => acc + item.valorTotalEstoque, 0);
+  const totalCriticos = dataset.filter(item => item.statusEstoque === "CRITICO").length;
+
+  res.status(200).json({
+    geradoEm: new Date().toISOString(),
+    resumoAnalitico: {
+      totalProdutos: dataset.length,
+      patrimonioTotal: Number(patrimonioTotal.toFixed(2)),
+      itensCriticos: totalCriticos,
+      itensSaudaveis: dataset.length - totalCriticos
+    },
+    dataset
+  });
+});
+
 app.use('/categorias', categoriaRoutes);
 // [FLUXO] Entrada de dados, roteamento HTTP ou leitura da base
 app.use('/produtos', produtoRoutes);
