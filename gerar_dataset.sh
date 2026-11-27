@@ -21,8 +21,8 @@ fi
 echo -e "\033[1;32m[TRANSF] 2. TRANSFORM — Limpando strings, cruzando categorias e calculando metricas...\033[0m"
 # [TRANSF] Normaliza nomes em MAIUSCULO, calcula valor total em estoque e classifica status
 jq -n -r --argjson p "$PRODUTOS" --argjson c "$CATEGORIAS" '
-  ($p.dados // $p.produtos // $p) as $prods |
-  ($c.dados // $c.categorias // $c) as $cats |
+  (if ($p | type) == "array" then $p else ($p.dados // $p.produtos // []) end) as $prods |
+  (if ($c | type) == "array" then $c else ($c.dados // $c.categorias // []) end) as $cats |
   (["ID", "PRODUTO", "CATEGORIA", "PRECO_UNITARIO", "QUANTIDADE", "VALOR_TOTAL_ESTOQUE", "STATUS_ESTOQUE"] | @csv),
   (
     $prods[] |
