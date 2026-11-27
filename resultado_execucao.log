@@ -1,0 +1,5 @@
+[2026-11-27 12:37:37] [FLUXO] GET /produtos -> 200 OK
+[2026-11-27 12:37:37] [FLUXO] GET /api/v1/dashboard -> 200 OK
+[2026-11-27 12:37:37] [ERRO] GET /produtos/9999 -> 404 Not Found (Produto nao encontrado)
+[2026-11-27 12:37:37] [ERRO] POST /produtos -> 400 Bad Request (Preco negativo bloqueado)
+[2026-11-27 12:37:37] [ERRO] POST /produtos -> 400 Bad Request (Nome duplicado)

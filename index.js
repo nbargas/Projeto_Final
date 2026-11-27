@@ -72,6 +72,48 @@ app.get('/api/v1/analytics', (req, res) => {
   });
 });
 
+// [FLUXO] Endpoint oficial do Desafio Bonus: Dashboard consolidado de estoque
+app.get('/api/v1/dashboard', (req, res) => {
+  const { lerBanco } = require('./src/data/db');
+  const db = lerBanco();
+  const produtos = db.produtos || [];
+  const categorias = db.categorias || [];
+
+  // [TRANSF] Agregacao de metricas por categoria e ranking de estoque
+  const porCategoria = categorias.map(c => {
+    const itens = produtos.filter(p => p.categoriaId === c.id);
+    const totalUnidades = itens.reduce((s, p) => s + p.quantidade, 0);
+    const valorPatrimonio = itens.reduce((s, p) => s + (p.preco * p.quantidade), 0);
+    return {
+      categoria: c.nome,
+      qtdProdutos: itens.length,
+      totalUnidades,
+      valorPatrimonio: Number(valorPatrimonio.toFixed(2))
+    };
+  });
+
+  const criticos = produtos.filter(p => p.quantidade <= 10).map(p => ({
+    id: p.id,
+    nome: p.nome,
+    quantidade: p.quantidade
+  }));
+
+  res.status(200).json({
+    projeto: "API Controle de Estoque — SENAI",
+    servidor: "Genesis (10.85.198.243:1414)",
+    timestamp: new Date().toISOString(),
+    kpis: {
+      totalProdutos: produtos.length,
+      totalCategorias: categorias.length,
+      unidadesEmEstoque: produtos.reduce((s, p) => s + p.quantidade, 0),
+      patrimonioTotal: Number(produtos.reduce((s, p) => s + (p.preco * p.quantidade), 0).toFixed(2)),
+      alertasCriticos: criticos.length
+    },
+    porCategoria,
+    alertasEstoqueCritico: criticos
+  });
+});
+
 app.use('/categorias', categoriaRoutes);
 // [FLUXO] Entrada de dados, roteamento HTTP ou leitura da base
 app.use('/produtos', produtoRoutes);
